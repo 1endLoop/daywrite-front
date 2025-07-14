@@ -1,0 +1,111 @@
+.react-calendar *,
+.react-calendar *::before,
+.react-calendar *::after {
+  box-sizing: border-box;
+}
+/* 전체 */
+.react-calendar {
+    width: 100%;
+    border-radius: 10px;
+    height: 600px;
+    border:none !important;
+}
+
+/* 달력 타이틀 (년/월) */
+.react-calendar__navigation {
+  display: flex;
+  justify-content: right;
+  align-items: center;
+  background-color: none;
+  border-top: none;
+  /* border-bottom: 1px solid #e0e0e0; */
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  padding: 10px 0;
+}
+
+/* 달력 타이틀 텍스트 (년/월) */
+.react-calendar__navigation__label {
+  font-size: 22px;
+  font-weight: 600;
+  color: #333;
+  background: none;
+  border: none;
+  cursor: default;
+}
+
+/* 요일 row 전체 */
+.react-calendar__month-view__weekdays {
+  border-top: 1px solid #e0e0e0;
+  /* border-right:  1px solid #e0e0e0; */
+}
+
+.react-calendar__month-view__weekdays__weekday {
+  font-size: 12px;       
+  color: #bfbfbf;         
+  text-align: left;     
+  padding: 8px 0;
+  padding-left : 5px;
+  border-right:  1px solid #e0e0e0;
+}
+
+.react-calendar__month-view__weekdays__weekday:first-child {
+  border-left: 1px solid #e0e0e0;
+}
+
+.react-calendar__month-view__weekdays__weekday abbr {
+  text-decoration: none; 
+}
+
+/* 날짜 선택 시 셀 전체 배경 강조 */
+.react-calendar__tile--active {
+  background-color: #e0e0e0 !important;
+  color: #000; /* 글씨는 검정으로 */
+ 
+}
+
+/* 일정 배경과 겹치지 않도록 hover 시 색상도 통일 */
+.react-calendar__tile--active:hover {
+  background-color: #e0e0e0 !important;
+}
+
+.react-calendar__month-view__days {
+  display: flex;
+  flex-wrap: wrap;
+  border-top: 1px solid #e0e0e0;
+  box-sizing: border-box;  
+}
+
+/* 일에 관한 cell  */
+.react-calendar__month-view__days > * {
+  height:125px;
+  border-bottom: 1px solid #e0e0e0!important;
+  /* border-left :1px solid #e0e0e0!important; */
+  border-right :1px solid #e0e0e0!important;
+
+ 
+}
+
+
+/* 맨 왼쪽 일에 관한 열만 border-left 제거 */
+.react-calendar__month-view__days > *:nth-child(7n + 1) {
+  border-left:1px solid #e0e0e0!important;
+}
+
+/* 날짜 셀 내부 레이아웃을 조정 */
+.react-calendar__tile {
+  display: flex;
+  flex-direction: column;         /* 세로 배치 */
+  align-items: flex-start;        /* 왼쪽 정렬 */
+  justify-content: flex-start;    /* 위쪽 정렬 */
+  padding: 5px;
+  position: relative;
+}
+
+/* 날짜 숫자(1, 2, 3...)을 작게 하고 위치 조정 */
+.react-calendar__tile abbr {
+  font-size: 14px;             /* 필요 시 크기 조정 */
+  text-align: left;            /* 텍스트 왼쪽 정렬 */
+  z-index: 1;
+  color: #333;
+}
