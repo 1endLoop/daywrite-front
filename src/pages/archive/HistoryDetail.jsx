@@ -3,8 +3,13 @@ import S from "./history.detail";
 import { useState } from "react";
 
 const HistoryDetail = ({ data, onClose }) => {
-  const { date, title, author, content, music, artist } = data;
+  const { createdAt, book, author, content, music, artist, keyword, genre } = data;
 
+  const formattedDate = new Date(createdAt).toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
   // 북마크, 좋아요 토글 버튼
   const [bookmarked, setBookmarked] = useState(true);
   const [liked, setLiked] = useState(true);
@@ -14,7 +19,7 @@ const HistoryDetail = ({ data, onClose }) => {
       <S.Modal>
         <S.Header>
           <S.DateRow>
-            <S.Date>{date}</S.Date>
+            <S.Date>{formattedDate}</S.Date>
             <S.IconGroup>
               <S.Icon onClick={() => setBookmarked((prev) => !prev)}>
                 <img
@@ -39,7 +44,7 @@ const HistoryDetail = ({ data, onClose }) => {
 
         <S.SourceBox>
           <span className="label">출처</span>
-          <span className="title">{title}</span>
+          <span className="title">{book}</span>
           <span className="author">{author}</span>
         </S.SourceBox>
         <S.Divider />
@@ -69,7 +74,12 @@ const HistoryDetail = ({ data, onClose }) => {
         <S.MetaSection>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <S.MetaText>
-              내가 선택한 카테고리 <S.Tags>위로 | 평온한 | 활력 | 짜증나는</S.Tags>
+              내가 선택한 카테고리
+              <S.Tags>
+                {genre}
+                {keyword && keyword.length > 0 && " | "}
+                {keyword?.join(" | ")}
+              </S.Tags>
             </S.MetaText>
           </div>
 

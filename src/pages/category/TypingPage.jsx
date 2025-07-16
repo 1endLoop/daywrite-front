@@ -23,7 +23,7 @@ const TypingPage = () => {
 
   const navigate = useNavigate();
   const isLoggedIn = false;
-    
+
   const location = useLocation();
   const { keywords = [], genres = [] } = location.state || {};
   const [selectedKeywords, setSelectedKeywords] = useState(keywords);
@@ -31,7 +31,12 @@ const TypingPage = () => {
 
   const dummyPlaylist = [
     { img: "/assets/images/album_cover/love-on-top.jpg", title: "Love on Top", artist: "Beyonce", liked: true },
-    { img: "/assets/images/album_cover/love-sick-girls.jpg", title: "Love Sick Girls", artist: "BlackPink", liked: false },
+    {
+      img: "/assets/images/album_cover/love-sick-girls.jpg",
+      title: "Love Sick Girls",
+      artist: "BlackPink",
+      liked: false,
+    },
     { img: "/assets/images/album_cover/smiley.ori.jpg", title: "Smiley", artist: "YENA", liked: false },
     { img: "/assets/images/album_cover/summernignt.lyn.jpg", title: "한여름 밤", artist: "Lyn", liked: true },
     { img: "/assets/images/album_cover/the-winning.jpg", title: "the winning", artist: "IU", liked: true },
@@ -66,12 +71,10 @@ const TypingPage = () => {
   }, [selectedKeywords, selectedGenres]);
 
   if (!writingData) {
-    console.log("아직 데이터 없음")
-    return (
-      <p>로딩 중...</p>
-    );
+    console.log("아직 데이터 없음");
+    return <p>로딩 중...</p>;
   }
-  console.log("WritingData 있음!! : ", writingData)
+  console.log("WritingData 있음!! : ", writingData);
 
   const current = inputValue.length;
   const total = writingData.content.length;
@@ -111,9 +114,7 @@ const TypingPage = () => {
         />
       )}
 
-      {showPlaylist && (
-        <MainPlaylistPopup onClose={() => setShowPlaylist(false)} data={dummyPlaylist} />
-      )}
+      {showPlaylist && <MainPlaylistPopup onClose={() => setShowPlaylist(false)} data={dummyPlaylist} />}
 
       <M.OuterWrap>
         <M.Container>
@@ -133,8 +134,7 @@ const TypingPage = () => {
 
               <M.TextBlock>
                 <M.Heading>
-                  <strong>{writingData.book}</strong>{" "}
-                  <p>{writingData.author ?? "Unknown"}</p>
+                  <strong>{writingData.book}</strong> <p>{writingData.author ?? "Unknown"}</p>
                   <span style={{ marginLeft: 8 }}>| Posted by AI</span>
                 </M.Heading>
               </M.TextBlock>
@@ -231,11 +231,7 @@ const TypingPage = () => {
                     </M.PlayIcon>
                     <M.PlayIcon onClick={handlePlayToggle}>
                       <img
-                        src={
-                          isPlaying
-                            ? "/assets/images/icons/music-pause.png"
-                            : "/assets/images/icons/music-play.png"
-                        }
+                        src={isPlaying ? "/assets/images/icons/music-pause.png" : "/assets/images/icons/music-play.png"}
                         alt={isPlaying ? "일시정지" : "재생"}
                       />
                     </M.PlayIcon>
@@ -278,10 +274,45 @@ const TypingPage = () => {
                 {showMoodPopup && (
                   <MoodSelect
                     onClose={() => setShowMoodPopup(false)}
-                    onSave={(mood) => {
+                    onSave={async (mood) => {
                       setSelectedMood(mood);
                       setShowMoodPopup(false);
-                      console.log("기록할 기분:", mood);
+
+                      // 히스토리 데이터 구성
+                      const historyData = {
+                        content: inputValue,
+                        book: writingData.book,
+                        author: writingData.author,
+                        publisher: writingData.publisher ?? "unknown",
+                        publishedDate: writingData.publishedDate ?? "unknown",
+                        bookCover: writingData.bookCover ?? "",
+                        keyword: selectedKeywords,
+                        genre: selectedGenres[0] ?? "",
+                        music: currentSong.title,
+                        artist: currentSong.artist,
+                        mood: mood, // 선택된 기분
+                      };
+
+                      try {
+                        const res = await fetch("http://localhost:8000/api/history", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          body: JSON.stringify(historyData),
+                        });
+
+                        if (res.ok) {
+                          alert("히스토리 저장 완료!");
+                          setInputValue(""); // 입력값 초기화
+                        } else {
+                          const err = await res.json();
+                          alert("저장 실패: " + err.message);
+                        }
+                      } catch (err) {
+                        console.error("히스토리 저장 실패:", err);
+                        alert("에러 발생: " + err.message);
+                      }
                     }}
                   />
                 )}

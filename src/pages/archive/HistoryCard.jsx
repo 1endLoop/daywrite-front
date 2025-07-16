@@ -4,8 +4,13 @@ import Card from "./history.card.style";
 import Dropdown from "./dropdown.style";
 
 const HistoryCard = ({ data, onClick, selected, isEditMode }) => {
-  const { date, content, title, author, music, artist } = data;
+  const { createdAt, content, book, author, music, artist } = data;
 
+  const formattedDate = new Date(createdAt).toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
   // 북마크, 좋아요 토글 버튼
   const [bookmarked, setBookmarked] = useState(true);
   const [liked, setLiked] = useState(true);
@@ -18,7 +23,7 @@ const HistoryCard = ({ data, onClick, selected, isEditMode }) => {
   return (
     <Card.Card selected={selected} onClick={onClick}>
       <Card.Header>
-        <Card.Date>{date}</Card.Date>
+        <Card.Date>{formattedDate}</Card.Date>
         <Dropdown.Wrapper ref={dropdownRef} onClick={(e) => e.stopPropagation()}>
           <Card.MoreBtn onClick={() => setOpenDropdown((prev) => !prev)}>⋯</Card.MoreBtn>
           {openDropdown && (
@@ -45,7 +50,7 @@ const HistoryCard = ({ data, onClick, selected, isEditMode }) => {
               alt="bookmark"
             />
           </Card.Icon>
-          <span className="title">{title}</span>
+          <span className="title">{book}</span>
           <span className="author">{author}</span>
         </Card.MetaLeft>
 
