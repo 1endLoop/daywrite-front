@@ -6,6 +6,7 @@ import MainPopup from "../main/MainPopup";
 import MainPlaylistPopup from "../main/MainPlaylistPopup";
 import CategoryPopup from "./CategoryPopup";
 import MoodSelect from "./MoodSelect";
+import { fetchRecommendedMusic } from "../../api/musicApi";
 
 const TypingPage = () => {
   const [writingData, setWritingData] = useState(null);
