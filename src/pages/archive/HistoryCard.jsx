@@ -3,7 +3,7 @@ import useClickOutside from "../../modules/hooks/useClickOutside";
 import Card from "./history.card.style";
 import Dropdown from "./dropdown.style";
 
-const HistoryCard = ({ data, onClick, onToggleBookmark }) => {
+const HistoryCard = ({ data, onClick, onToggleBookmark, selected, isEditMode }) => {
   const { createdAt, content, book, author, music, artist, bookmarked } = data;
 
   const formattedDate = new Date(createdAt).toLocaleDateString("ko-KR", {
@@ -41,8 +41,8 @@ const HistoryCard = ({ data, onClick, onToggleBookmark }) => {
         <Card.MetaLeft>
           <Card.Icon
             onClick={(e) => {
-              e.stopPropagation(); // 카드 클릭 방지
-              onToggleBookmark(); // 부모의 북마크 핸들러 호출
+              e.stopPropagation();
+              onToggleBookmark(data); // 부모에서 북마크 API 호출
             }}
           >
             <img
@@ -59,10 +59,19 @@ const HistoryCard = ({ data, onClick, onToggleBookmark }) => {
         </Card.MetaLeft>
 
         <Card.MetaRight>
-          <Card.Icon onClick={() => setLiked((prev) => !prev)}>
+          <Card.Icon
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleBookmark(data); // 부모에게 북마크 요청
+            }}
+          >
             <img
-              src={liked ? "../assets/images/icons/svg/like=on.svg" : "../assets/images/icons/svg/like=off.svg"}
-              alt="like"
+              src={
+                bookmarked
+                  ? "../assets/images/icons/svg/bookmark=on.svg"
+                  : "../assets/images/icons/svg/bookmark=off.svg"
+              }
+              alt="bookmark"
             />
           </Card.Icon>
           <Card.Music>

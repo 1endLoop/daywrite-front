@@ -57,7 +57,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
         typing: data.content,
         title: data.book,
         author: data.author,
-        source: data.publisher || "unknown",
+        publisher: data.publisher || "unknown",
         publishedDate: data.publishedDate ?? "unknown",
         bookCover: data.bookCover ?? "",
       });

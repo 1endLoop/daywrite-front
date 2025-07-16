@@ -2,10 +2,12 @@ import styled from "styled-components";
 import HistoryCard from "./HistoryCard";
 import HistoryDetail from "./HistoryDetail";
 import { useState, useEffect } from "react";
+import Toast from "../../components/Toast";
 
 const HistoryList = () => {
   const [historyList, setHistoryList] = useState([]);
   const [selectedCard, setSelectedCard] = useState(null);
+  const [toast, setToast] = useState(null); // 토스트 상태
 
   // 데이터 가져오기
   useEffect(() => {
@@ -15,26 +17,48 @@ const HistoryList = () => {
         // 북마크 초기값 세팅
         const updatedData = data.map((item) => ({
           ...item,
-          bookmarked: true, // 초기값 (API 값이 있다면 거기서 받아도 됨)
+          bookmarked: false, // 초기값
         }));
         setHistoryList(updatedData);
       })
       .catch((err) => console.error("히스토리 불러오기 실패:", err));
   }, []);
 
-  // 북마크 상태 토글 함수
-  const toggleBookmark = (id) => {
-    const updated = historyList.map((item) => (item._id === id ? { ...item, bookmarked: !item.bookmarked } : item));
-    setHistoryList(updated);
+  const USER_ID = "user1"; // 사용자 고유 ID (실제 인증 연동 전엔 하드코딩)
 
-    // 디테일에서 보고 있다면 상태도 반영
-    if (selectedCard?._id === id) {
-      setSelectedCard(updated.find((item) => item._id === id));
+  const toggleBookmark = async (item) => {
+    const isBookmarked = item.bookmarked;
+    const url = "http://localhost:8000/api/bookmarks";
+
+    try {
+      if (isBookmarked) {
+        await fetch(url, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: USER_ID, historyId: item._id }),
+        });
+      } else {
+        await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: USER_ID, historyId: item._id, folderId: 1 }),
+        });
+
+        // 북마크 저장되었을 때만 토스트 띄우기
+        setToast("북마크에 저장되었습니다!");
+        setTimeout(() => setToast(null), 2000); // 2초 뒤 사라짐
+      }
+
+      // 북마크 UI 상태 업데이트
+      setHistoryList((prev) => prev.map((el) => (el._id === item._id ? { ...el, bookmarked: !isBookmarked } : el)));
+    } catch (err) {
+      console.error("북마크 저장 실패:", err);
     }
   };
 
   return (
     <Container>
+      {toast && <Toast message={toast} />}
       <TopRow>
         <Title>History</Title>
         <SearchBarWrapper>
@@ -48,7 +72,9 @@ const HistoryList = () => {
             key={item._id}
             data={item}
             onClick={() => setSelectedCard(item)}
-            onToggleBookmark={() => toggleBookmark(item._id)}
+            onToggleBookmark={() => toggleBookmark(item)}
+            selected={false}
+            isEditMode={false}
           />
         ))}
       </CardList>
@@ -57,7 +83,7 @@ const HistoryList = () => {
         <HistoryDetail
           data={selectedCard}
           onClose={() => setSelectedCard(null)}
-          onToggleBookmark={() => toggleBookmark(selectedCard._id)}
+          onToggleBookmark={() => toggleBookmark(selectedCard)}
         />
       )}
     </Container>

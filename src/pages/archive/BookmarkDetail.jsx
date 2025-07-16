@@ -12,9 +12,9 @@ const BookmarkDetail = ({ onClose, data }) => {
         </S.Header>
         <S.Divider />
         <S.Content>
-          <S.CoverImage src={data.coverUrl} alt={data.title} />
+          <S.CoverImage src={data.bookCover} alt={data.title} />
           <S.InfoBox>
-            <S.Title>{data.title}</S.Title>
+            <S.Title>{data.book}</S.Title>
             <S.Meta>
               <span>
                 <label>저자</label> {data.author}

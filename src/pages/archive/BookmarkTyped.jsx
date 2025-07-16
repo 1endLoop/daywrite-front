@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import S from "./bookmark.typed.style";
 import useClickOutside from "../../modules/hooks/useClickOutside";
 import Dropdown from "../../components/dropdown/Dropdown";
@@ -7,6 +7,7 @@ import HistoryCard from "./HistoryCard";
 import BookmarkDetail from "./BookmarkDetail";
 
 const BookmarkTyped = () => {
+  const [bookmarkItems, setBookmarkItems] = useState([]);
   const { id } = useParams();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -24,6 +25,65 @@ const BookmarkTyped = () => {
       x: rect.left,
       y: rect.bottom,
     });
+  };
+
+  useEffect(() => {
+    const fetchBookmarks = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/api/bookmarks?userId=user1&folderId=1");
+        const data = await res.json();
+
+        if (Array.isArray(data)) {
+          const parsed = data.map((item) => ({
+            ...item, // history 데이터 + bookmarkId + folderId
+            bookmarked: true, // 북마크 상태
+          }));
+
+          setBookmarkItems(parsed);
+        } else {
+          console.warn("북마크 응답이 배열이 아닙니다:", data);
+          setBookmarkItems([]);
+        }
+      } catch (err) {
+        console.error("북마크 불러오기 실패:", err);
+      }
+    };
+
+    fetchBookmarks();
+  }, []);
+
+  const handleBookmark = async (item) => {
+    const isBookmarked = item.bookmarked;
+
+    try {
+      if (isBookmarked) {
+        await fetch("http://localhost:8000/api/bookmarks", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: "user1", historyId: item._id }),
+        });
+        setBookmarkItems((prev) => prev.filter((b) => b._id !== item._id));
+      } else {
+        const res = await fetch("http://localhost:8000/api/bookmarks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: "user1", historyId: item._id, folderId: 1 }),
+        });
+        const saved = await res.json();
+
+        setBookmarkItems((prev) => [
+          ...prev,
+          {
+            ...item,
+            bookmarked: true,
+            bookmarkId: saved._id,
+            folderId: 1,
+          },
+        ]);
+      }
+    } catch (err) {
+      console.error("북마크 처리 실패:", err);
+    }
   };
 
   // 디테일 팝업
@@ -117,12 +177,13 @@ const BookmarkTyped = () => {
 
         {/* 북마크 카드 리스트 */}
         <S.CardColumn>
-          {items.map((item, idx) => (
+          {bookmarkItems.map((item) => (
             <HistoryCard
-              key={item.id}
-              data={item}
-              onClick={() => (isEditMode ? handleCardSelect(item.id) : handleCardClick(item))}
-              selected={selectedIds.includes(item.id)}
+              key={item._id}
+              data={{ ...item, bookmarked: true }} // 북마크된 상태 표시
+              onToggleBookmark={() => handleBookmark(item)}
+              onClick={() => handleCardClick(item)}
+              selected={selectedIds.includes(item._id)}
               isEditMode={isEditMode}
             />
           ))}
