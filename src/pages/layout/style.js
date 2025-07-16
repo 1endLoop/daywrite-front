@@ -83,6 +83,7 @@ S.Wrapper = styled.div`
   z-index: 5;
 
   overflow-y: scroll;
+  overflow-x: hidden; 
 
   /* 스크롤바 숨기기 (크로스 브라우징) */
   -ms-overflow-style: none;  /* IE, Edge */

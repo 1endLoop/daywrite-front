@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -9,15 +9,38 @@ const InquiryHome = () => {
   const isWritePage = location.pathname.includes('/inquiry/write');
   const isListPage = location.pathname === '/mypage/inquiry';
 
-  const [inquiries] = useState([
-    { title: '어떻게 사용하나요?', date: '2025.04.18', status: '답변완료' },
-    { title: '커뮤니티 신고는 어떻게 하는 걸까요?', date: '2025.04.18', status: '미응답' },
-    { title: '이거 왜 안되나요', date: '2025.04.18', status: '미응답' },
-    { title: '레벨은 어떻게 하나요', date: '2025.04.18', status: '미응답' },
-    { title: '무슨 질문을 할까요 사람들이?', date: '2025.04.18', status: '답변완료' },
-    { title: '무슨 질문을 할까요 사람들이?', date: '2025.04.18', status: '답변완료' },
-    { title: '무슨 질문을 할까요 사람들이?', date: '2025.04.18', status: '답변완료' },
-  ]);
+  const [inquiries, setInquiries] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const inquiriesPerPage = 5;
+
+  useEffect(() => {
+    const fetchInquiries = async () => {
+      try {
+        const res = await fetch('http://localhost:8000/api/inquiry');
+        const data = await res.json();
+        setInquiries(data);
+      } catch (err) {
+        console.error('문의 불러오기 실패:', err);
+      }
+    };
+
+    fetchInquiries();
+  }, []);
+
+  const formatDate = (isoString) => {
+    const date = new Date(isoString);
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).replace(/\. /g, '.').replace('.', '.');
+  };
+
+  // 페이지네이션 계산
+  const totalPages = Math.ceil(inquiries.length / inquiriesPerPage);
+  const indexOfLast = currentPage * inquiriesPerPage;
+  const indexOfFirst = indexOfLast - inquiriesPerPage;
+  const currentInquiries = inquiries.slice(indexOfFirst, indexOfLast);
 
   return (
     <Wrapper>
@@ -39,22 +62,40 @@ const InquiryHome = () => {
           </tr>
         </thead>
         <tbody>
-          {inquiries.map((item, index) => (
+          {currentInquiries.map((item, index) => (
             <tr key={index}>
               <td>{item.title}</td>
-              <td>{item.date}</td>
-              <td className={item.status === '미응답' ? 'pending' : ''}>{item.status}</td>
+              <td>{formatDate(item.createdAt)}</td>
+              <td className="pending">미응답</td>
             </tr>
           ))}
         </tbody>
       </StyledTable>
 
       <Pagination>
-        <span>{'<'}</span>
-        <span className="active">1</span>
-        <span>2</span>
-        <span>3</span>
-        <span>{'>'}</span>
+        <span
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          style={{ opacity: currentPage === 1 ? 0.3 : 1 }}
+        >
+          {'<'}
+        </span>
+
+        {[...Array(totalPages)].map((_, i) => (
+          <span
+            key={i}
+            className={currentPage === i + 1 ? 'active' : ''}
+            onClick={() => setCurrentPage(i + 1)}
+          >
+            {i + 1}
+          </span>
+        ))}
+
+        <span
+          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+          style={{ opacity: currentPage === totalPages ? 0.3 : 1 }}
+        >
+          {'>'}
+        </span>
       </Pagination>
     </Wrapper>
   );
@@ -120,6 +161,7 @@ const Pagination = styled.div`
     cursor: pointer;
     padding: 4px 8px;
     border-radius: 4px;
+    user-select: none;
   }
 
   .active {
