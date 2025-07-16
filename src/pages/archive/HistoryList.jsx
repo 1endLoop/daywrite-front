@@ -37,6 +37,9 @@ const HistoryList = () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId: USER_ID, historyId: item._id }),
         });
+        // 북마크 해제 토스트
+        setToast("북마크에서 삭제되었습니다!");
+        setTimeout(() => setToast(null), 2000);
       } else {
         await fetch(url, {
           method: "POST",
@@ -44,7 +47,7 @@ const HistoryList = () => {
           body: JSON.stringify({ userId: USER_ID, historyId: item._id, folderId: 1 }),
         });
 
-        // 북마크 저장되었을 때만 토스트 띄우기
+        // 북마크 저장 토스트
         setToast("북마크에 저장되었습니다!");
         setTimeout(() => setToast(null), 2000); // 2초 뒤 사라짐
       }
@@ -54,6 +57,10 @@ const HistoryList = () => {
     } catch (err) {
       console.error("북마크 저장 실패:", err);
     }
+  };
+
+  const toggleLike = (item) => {
+    setHistoryList((prev) => prev.map((el) => (el._id === item._id ? { ...el, liked: !el.liked } : el)));
   };
 
   return (
@@ -73,6 +80,7 @@ const HistoryList = () => {
             data={item}
             onClick={() => setSelectedCard(item)}
             onToggleBookmark={() => toggleBookmark(item)}
+            onToggleLike={() => toggleLike(item)}
             selected={false}
             isEditMode={false}
           />
@@ -84,6 +92,7 @@ const HistoryList = () => {
           data={selectedCard}
           onClose={() => setSelectedCard(null)}
           onToggleBookmark={() => toggleBookmark(selectedCard)}
+          onToggleLike={() => toggleLike(selectedCard)}
         />
       )}
     </Container>

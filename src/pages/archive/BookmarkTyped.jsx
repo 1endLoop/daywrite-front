@@ -63,6 +63,8 @@ const BookmarkTyped = () => {
           body: JSON.stringify({ userId: "user1", historyId: item._id }),
         });
         setBookmarkItems((prev) => prev.filter((b) => b._id !== item._id));
+        // 리스트에서 제거
+        setBookmarkItems((prev) => prev.filter((b) => b._id !== item._id));
       } else {
         const res = await fetch("http://localhost:8000/api/bookmarks", {
           method: "POST",
