@@ -1,27 +1,25 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import useClickOutside from "../../modules/hooks/useClickOutside";
 import Card from "./history.card.style";
 import Dropdown from "./dropdown.style";
 
-const HistoryCard = ({ data, onClick, selected, isEditMode }) => {
-  const { createdAt, content, book, author, music, artist } = data;
+const HistoryCard = ({ data, onClick, onToggleBookmark }) => {
+  const { createdAt, content, book, author, music, artist, bookmarked } = data;
 
   const formattedDate = new Date(createdAt).toLocaleDateString("ko-KR", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   });
-  // 북마크, 좋아요 토글 버튼
-  const [bookmarked, setBookmarked] = useState(true);
+
   const [liked, setLiked] = useState(true);
 
-  // 드롭다운 (커스텀훅 경로: modules/hooks/useClickOutside.js)
   const [openDropdown, setOpenDropdown] = useState(false);
   const dropdownRef = useRef(null);
   useClickOutside(dropdownRef, () => setOpenDropdown(false));
 
   return (
-    <Card.Card selected={selected} onClick={onClick}>
+    <Card.Card>
       <Card.Header>
         <Card.Date>{formattedDate}</Card.Date>
         <Dropdown.Wrapper ref={dropdownRef} onClick={(e) => e.stopPropagation()}>
@@ -34,13 +32,19 @@ const HistoryCard = ({ data, onClick, selected, isEditMode }) => {
           )}
         </Dropdown.Wrapper>
       </Card.Header>
+
       <Card.Content onClick={onClick}>{content}</Card.Content>
 
       <Card.Divider />
 
       <Card.MetaWrapper>
         <Card.MetaLeft>
-          <Card.Icon onClick={() => setBookmarked((prev) => !prev)}>
+          <Card.Icon
+            onClick={(e) => {
+              e.stopPropagation(); // 카드 클릭 방지
+              onToggleBookmark(); // 부모의 북마크 핸들러 호출
+            }}
+          >
             <img
               src={
                 bookmarked

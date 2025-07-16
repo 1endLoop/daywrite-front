@@ -9,7 +9,6 @@ Card.Card = styled.div`
   border-radius: 5px;
   font-family: pretendard;
   transition: border 0.2s ease;
-  cursor: pointer;
 `;
 
 Card.Header = styled.div`

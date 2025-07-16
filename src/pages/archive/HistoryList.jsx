@@ -11,9 +11,27 @@ const HistoryList = () => {
   useEffect(() => {
     fetch("http://localhost:8000/api/history")
       .then((res) => res.json())
-      .then((data) => setHistoryList(data))
+      .then((data) => {
+        // 북마크 초기값 세팅
+        const updatedData = data.map((item) => ({
+          ...item,
+          bookmarked: true, // 초기값 (API 값이 있다면 거기서 받아도 됨)
+        }));
+        setHistoryList(updatedData);
+      })
       .catch((err) => console.error("히스토리 불러오기 실패:", err));
   }, []);
+
+  // 북마크 상태 토글 함수
+  const toggleBookmark = (id) => {
+    const updated = historyList.map((item) => (item._id === id ? { ...item, bookmarked: !item.bookmarked } : item));
+    setHistoryList(updated);
+
+    // 디테일에서 보고 있다면 상태도 반영
+    if (selectedCard?._id === id) {
+      setSelectedCard(updated.find((item) => item._id === id));
+    }
+  };
 
   return (
     <Container>
@@ -26,11 +44,22 @@ const HistoryList = () => {
 
       <CardList>
         {historyList.map((item, index) => (
-          <HistoryCard key={item._id || index} data={item} onClick={() => setSelectedCard(item)} />
+          <HistoryCard
+            key={item._id}
+            data={item}
+            onClick={() => setSelectedCard(item)}
+            onToggleBookmark={() => toggleBookmark(item._id)}
+          />
         ))}
       </CardList>
 
-      {selectedCard && <HistoryDetail data={selectedCard} onClose={() => setSelectedCard(null)} />}
+      {selectedCard && (
+        <HistoryDetail
+          data={selectedCard}
+          onClose={() => setSelectedCard(null)}
+          onToggleBookmark={() => toggleBookmark(selectedCard._id)}
+        />
+      )}
     </Container>
   );
 };
