@@ -7,25 +7,44 @@ import Toast from "../../components/Toast";
 const HistoryList = () => {
   const [historyList, setHistoryList] = useState([]);
   const [selectedCard, setSelectedCard] = useState(null);
-  const [toast, setToast] = useState(null); // 토스트 상태
+  const [toast, setToast] = useState(null);
 
-  // 데이터 가져오기
+  const USER_ID = "user1";
+
+  // ✅ 데이터 가져오기
   useEffect(() => {
-    fetch("http://localhost:8000/api/history")
-      .then((res) => res.json())
-      .then((data) => {
-        // 북마크 초기값 세팅
-        const updatedData = data.map((item) => ({
-          ...item,
-          bookmarked: false, // 초기값
-        }));
-        setHistoryList(updatedData);
-      })
-      .catch((err) => console.error("히스토리 불러오기 실패:", err));
+    const fetchData = async () => {
+      try {
+        // 1. 모든 history 불러오기
+        const historyRes = await fetch("http://localhost:8000/api/history");
+        const histories = await historyRes.json();
+
+        // 2. 북마크 목록 불러오기
+        const bookmarkRes = await fetch(`http://localhost:8000/api/bookmarks?userId=${USER_ID}`);
+        const bookmarks = await bookmarkRes.json(); // [{ _id, ...history, bookmarkId }]
+        const bookmarkedIds = bookmarks.map((item) => item._id); // history._id 기준
+
+        const likedMusicKeys = JSON.parse(localStorage.getItem("likedMusicIds") || "[]");
+
+        const merged = histories.map((item) => {
+          const key = `${item.music}___${item.artist}`;
+          return {
+            ...item,
+            bookmarked: bookmarkedIds.includes(item._id),
+            liked: likedMusicKeys.includes(key),
+          };
+        });
+
+        setHistoryList(merged);
+      } catch (err) {
+        console.error("데이터 불러오기 실패:", err);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  const USER_ID = "user1"; // 사용자 고유 ID (실제 인증 연동 전엔 하드코딩)
-
+  // ✅ 북마크 토글
   const toggleBookmark = async (item) => {
     const isBookmarked = item.bookmarked;
     const url = "http://localhost:8000/api/bookmarks";
@@ -37,30 +56,45 @@ const HistoryList = () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId: USER_ID, historyId: item._id }),
         });
-        // 북마크 해제 토스트
         setToast("북마크에서 삭제되었습니다!");
-        setTimeout(() => setToast(null), 2000);
       } else {
         await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId: USER_ID, historyId: item._id, folderId: 1 }),
         });
-
-        // 북마크 저장 토스트
         setToast("북마크에 저장되었습니다!");
-        setTimeout(() => setToast(null), 2000); // 2초 뒤 사라짐
       }
 
-      // 북마크 UI 상태 업데이트
+      // 상태 업데이트
       setHistoryList((prev) => prev.map((el) => (el._id === item._id ? { ...el, bookmarked: !isBookmarked } : el)));
+
+      // 디테일 팝업 상태도 함께 반영
+      if (selectedCard && selectedCard._id === item._id) {
+        setSelectedCard({ ...item, bookmarked: !isBookmarked });
+      }
+
+      setToast(isBookmarked ? "북마크에서 삭제되었습니다!" : "북마크에 저장되었습니다!");
+      setTimeout(() => setToast(null), 2000);
     } catch (err) {
-      console.error("북마크 저장 실패:", err);
+      console.error("북마크 처리 실패:", err);
     }
   };
 
-  const toggleLike = (item) => {
-    setHistoryList((prev) => prev.map((el) => (el._id === item._id ? { ...el, liked: !el.liked } : el)));
+  // 음악 좋아요 토글 (LocalStorage 활용)
+  const toggleMusicLike = (item) => {
+    const key = `${item.music}___${item.artist}`;
+    const likedMusics = JSON.parse(localStorage.getItem("likedMusicIds") || "[]");
+
+    const updated = item.liked ? likedMusics.filter((k) => k !== key) : [...likedMusics, key];
+
+    localStorage.setItem("likedMusicIds", JSON.stringify(updated));
+
+    setHistoryList((prev) => prev.map((el) => (el._id === item._id ? { ...el, liked: !item.liked } : el)));
+
+    if (selectedCard && selectedCard._id === item._id) {
+      setSelectedCard({ ...item, liked: !item.liked });
+    }
   };
 
   return (
@@ -74,13 +108,13 @@ const HistoryList = () => {
       </TopRow>
 
       <CardList>
-        {historyList.map((item, index) => (
+        {historyList.map((item) => (
           <HistoryCard
             key={item._id}
             data={item}
             onClick={() => setSelectedCard(item)}
             onToggleBookmark={() => toggleBookmark(item)}
-            onToggleLike={() => toggleLike(item)}
+            onToggleLike={() => toggleMusicLike(item)}
             selected={false}
             isEditMode={false}
           />
@@ -92,7 +126,7 @@ const HistoryList = () => {
           data={selectedCard}
           onClose={() => setSelectedCard(null)}
           onToggleBookmark={() => toggleBookmark(selectedCard)}
-          onToggleLike={() => toggleLike(selectedCard)}
+          onToggleLike={() => toggleMusicLike(selectedCard)}
         />
       )}
     </Container>
