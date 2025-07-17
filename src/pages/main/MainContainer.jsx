@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import M from "./main.form.style";
 import MainPopup from "./MainPopup";
 import MainPlaylistPopup from "./MainPlaylistPopup";
+import Toast from "../../components/Toast";
 
-const MainContainer = ({isUpdate, setIsUpdate}) => {
+const MainContainer = ({ isUpdate, setIsUpdate }) => {
+  const [toast, setToast] = useState(null); // 토스트
+  const [isBookmarked, setIsBookmarked] = useState(false);
   const [showLike, setShowLike] = useState(false);
   const [showBookmark, setShowBookmark] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -33,34 +36,41 @@ const MainContainer = ({isUpdate, setIsUpdate}) => {
   const [showPlaylist, setShowPlaylist] = useState(false);
   const dummyPlaylist = [
     { img: "/assets/images/album_cover/love-on-top.jpg", title: "Love on Top", artist: "Beyonce", liked: true },
-    { img: "/assets/images/album_cover/love-sick-girls.jpg", title: "Love Sick Girls", artist: "BlackPink(블랙핑크)", liked: false },
+    {
+      img: "/assets/images/album_cover/love-sick-girls.jpg",
+      title: "Love Sick Girls",
+      artist: "BlackPink(블랙핑크)",
+      liked: false,
+    },
     { img: "/assets/images/album_cover/smiley.ori.jpg", title: "Smiley", artist: "YENA(최예나)", liked: false },
     { img: "/assets/images/album_cover/summernignt.lyn.jpg", title: "한여름 밤", artist: "Lyn(린)", liked: true },
-    { img: "/assets/images/album_cover/the-winning.jpg", title: "the winning", artist: "IU(아이유)", liked: true }
+    { img: "/assets/images/album_cover/the-winning.jpg", title: "the winning", artist: "IU(아이유)", liked: true },
   ];
   const [currentSong, setCurrentSong] = useState(dummyPlaylist[0]);
 
   const fetchRandomScript = async () => {
-  try {
-    const response = await fetch("/api/main/random");
+    try {
+      const response = await fetch("/api/main/random");
 
-    if (!response.ok) throw new Error("서버 응답 오류");
+      if (!response.ok) throw new Error("서버 응답 오류");
 
-    const data = await response.json();
+      const data = await response.json();
 
-    setCurrentData({
-      typing: data.content,
-      title: data.book,
-      author: data.author,
-      source: data.publisher || "unknown"
-    });
+      setCurrentData({
+        typing: data.content,
+        title: data.book,
+        author: data.author,
+        publisher: data.publisher || "unknown",
+        publishedDate: data.publishedDate ?? "unknown",
+        bookCover: data.bookCover ?? "",
+      });
 
-    setInputValue("");
-    setFade(true);
-  } catch (err) {
-    console.error("랜덤 스크립트 불러오기 실패:", err);
-  }
-};
+      setInputValue("");
+      setFade(true);
+    } catch (err) {
+      console.error("랜덤 스크립트 불러오기 실패:", err);
+    }
+  };
 
   // 새로고침 버튼
   const handleRefresh = () => {
@@ -91,40 +101,103 @@ const MainContainer = ({isUpdate, setIsUpdate}) => {
   const percent = total > 0 ? Math.floor((current / total) * 100) : 0;
   const filledCount = Math.floor((percent / 100) * visibleCount);
 
-  // 필사 글 저장
-  const [value, setValue] = useState("")
-  // const onChangeValue = (e) => {
-  //   setValue(e.target.value)
-  // }
-// onChange={onChangeValue} value={value} onKeyDown={onKeyDownAddTodo}
-  const onKeyDownAddTodo = async (e) => {
-    if(e.key === 'Enter'){
-      if(!window.confirm('이대로 추가하시겠어요?😄')) return;
-      await fetch(`${process.env.REACT_APP_BACKEND_URL}/main/api/register`, {
-        method : "POST",
-        headers : {
-          "Content-Type" : "application/json"
-        },
-        body : JSON.stringify({
-          title : inputValue,
-        })
-      })
-      .then((res) => {
-        if(!res.ok) throw new Error(`Response Fetching Error 여기가 문제`);
-        return res.json()
-      })
-      .then((res) => {
-        console.log(res)
-        if(res.message) alert(res.message);
-        setInputValue("")
-        setIsUpdate(!isUpdate) // 상태 리랜더링
-      })
-      .catch(console.error)
+  // 필사글 저장
+  const handleSave = async () => {
+    if (!currentData || inputValue.trim() === "") {
+      alert("필사 내용이 비어 있어요!");
+      return;
     }
-  }
+
+    const historyData = {
+      content: inputValue,
+      book: currentData.title,
+      author: currentData.author,
+      publisher: currentData.publisher ?? "unknown",
+      publishedDate: currentData.publishedDate ?? "unknown",
+      bookCover: currentData.bookCover ?? "", // 이미지 없으면 빈 문자열
+      music: currentSong.title,
+      artist: currentSong.artist,
+    };
+
+    try {
+      const res = await fetch("http://localhost:8000/api/history", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(historyData),
+      });
+
+      if (res.ok) {
+        alert("히스토리 저장 완료!");
+        setInputValue("");
+      } else {
+        const err = await res.json();
+        alert("저장 실패: " + err.message);
+      }
+    } catch (err) {
+      console.error("히스토리 저장 실패:", err);
+      alert("에러 발생: " + err.message);
+    }
+  };
+
+  // 북마크 핸들러 추가
+  // 북마크 핸들러
+  const handleBookmark = async () => {
+    if (!currentData || isBookmarked) return;
+
+    const historyData = {
+      content: currentData.typing,
+      book: currentData.title,
+      author: currentData.author,
+      publisher: currentData.publisher ?? "unknown",
+      publishedDate: currentData.publishedDate ?? "unknown",
+      bookCover: currentData.bookCover ?? "",
+      music: currentSong.title,
+      artist: currentSong.artist,
+    };
+
+    try {
+      const historyRes = await fetch("http://localhost:8000/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(historyData),
+      });
+
+      const savedHistory = await historyRes.json();
+      if (!historyRes.ok || !savedHistory._id) throw new Error("히스토리 저장 실패");
+
+      const bookmarkData = {
+        userId: "user1",
+        historyId: savedHistory._id,
+        folderId: 1,
+      };
+
+      const bookmarkRes = await fetch("http://localhost:8000/api/bookmarks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bookmarkData),
+      });
+
+      if (!bookmarkRes.ok) {
+        const err = await bookmarkRes.json();
+        throw new Error(err.message || "북마크 저장 실패");
+      }
+
+      setIsBookmarked(true);
+      setShowBookmark(true);
+      setToast("북마크에 저장되었습니다!");
+      setTimeout(() => setToast(null), 2000);
+      navigate("/bookmark");
+    } catch (err) {
+      console.error("북마크 저장 에러:", err);
+      alert("에러: " + err.message);
+    }
+  };
 
   return (
     <div>
+      {toast && <Toast message={toast} />}
       {showPopup && (
         <MainPopup
           type={popupType}
@@ -136,9 +209,7 @@ const MainContainer = ({isUpdate, setIsUpdate}) => {
         />
       )}
 
-      {showPlaylist && (
-        <MainPlaylistPopup onClose={() => setShowPlaylist(false)} data={dummyPlaylist} />
-      )}
+      {showPlaylist && <MainPlaylistPopup onClose={() => setShowPlaylist(false)} data={dummyPlaylist} />}
 
       <M.Container>
         <M.Content01>
@@ -148,10 +219,10 @@ const MainContainer = ({isUpdate, setIsUpdate}) => {
           </M.TitleWrap>
           <M.TitleIconWrap>
             <M.IcBtn onClick={handleSettingClick}>
-              <img src="/assets/images/icons/settings.png" alt="필사 테마 설정" />
+              <img src="/assets/images/icons/svg/settings.svg" alt="필사 테마 설정" />
             </M.IcBtn>
             <M.IcBtn onClick={() => setInputValue("")}>
-              <img src="/assets/images/icons/eraser.png" alt="필사글 전체 지우기" />
+              <img src="/assets/images/icons/svg/eraser.svg" alt="필사글 전체 지우기" />
             </M.IcBtn>
           </M.TitleIconWrap>
         </M.Content01>
@@ -199,12 +270,11 @@ const MainContainer = ({isUpdate, setIsUpdate}) => {
                       </span>
                     );
                   })}
-                  
                 </M.TypingOverlay>
               )}
 
               <M.HiddenInput
-                onKeyDown={onKeyDownAddTodo}
+                // onKeyDown={onKeyDownAddTodo}
                 value={inputValue}
                 spellCheck={false}
                 onChange={(e) => {
@@ -226,9 +296,7 @@ const MainContainer = ({isUpdate, setIsUpdate}) => {
                   <img
                     src={
                       process.env.PUBLIC_URL +
-                      (showLike
-                        ? "/assets/images/icons/like-on-color.png"
-                        : "/assets/images/icons/like-off-color.png")
+                      (showLike ? "/assets/images/icons/svg/like=on.svg" : "/assets/images/icons/svg/like=off.svg")
                     }
                     alt="like"
                   />
@@ -244,26 +312,26 @@ const MainContainer = ({isUpdate, setIsUpdate}) => {
               <M.PlayListIconWrap>
                 <M.PlayIconWrap>
                   <M.PlayIcon>
-                    <img src="/assets/images/icons/skip_previous.png" alt="재생 이전" />
+                    <img src="/assets/images/icons/svg/music_prev.svg" alt="재생 이전" />
                   </M.PlayIcon>
                   <M.PlayIcon onClick={handlePlayToggle}>
                     <img
                       src={
                         isPlaying
-                          ? "/assets/images/icons/music-pause.png"
-                          : "/assets/images/icons/music-play.png"
+                          ? "/assets/images/icons/svg/music_stop.svg"
+                          : "/assets/images/icons/svg/music_play.svg"
                       }
                       alt={isPlaying ? "일시정지" : "재생"}
                     />
                   </M.PlayIcon>
                   <M.PlayIcon>
-                    <img src="/assets/images/icons/skip_next.png" alt="재생 다음" />
+                    <img src="/assets/images/icons/svg/music_next.svg" alt="재생 다음" />
                   </M.PlayIcon>
                 </M.PlayIconWrap>
                 <M.PlayListWrap onClick={() => setShowPlaylist(!showPlaylist)}>
                   <h4>PLAY LIST</h4>
                   <M.IcBtn>
-                    <img src="/assets/images/icons/list.png" alt="플레이리스트" />
+                    <img src="/assets/images/icons/svg/list.svg" alt="플레이리스트" />
                   </M.IcBtn>
                 </M.PlayListWrap>
               </M.PlayListIconWrap>
@@ -274,16 +342,18 @@ const MainContainer = ({isUpdate, setIsUpdate}) => {
             <M.StyledUnder02>
               <M.ReplayBookIconWrap>
                 <M.ReplayBtn onClick={handleRefresh}>
-                  <img src="/assets/images/icons/replay.png" alt="필사 새로고침" />
+                  <img src="/assets/images/icons/svg/replay.svg" alt="필사 새로고침" />
                 </M.ReplayBtn>
                 <M.BookmarkInfoWrap>
-                  <M.IconButton onClick={() => setShowBookmark(!showBookmark)}>
+                  <M.IconButton
+                    onClick={handleBookmark} // 북마크 저장 실행
+                  >
                     <img
                       src={
                         process.env.PUBLIC_URL +
                         (showBookmark
-                          ? "/assets/images/icons/bookmark-on-color.png"
-                          : "/assets/images/icons/bookmark-off-color.png")
+                          ? "/assets/images/icons/svg/bookmark=on.svg"
+                          : "/assets/images/icons/svg/bookmark=off.svg")
                       }
                       alt="bookmark"
                     />
@@ -292,12 +362,12 @@ const MainContainer = ({isUpdate, setIsUpdate}) => {
                     <h4>{currentData?.title ?? "-"}</h4>
                     <M.BookInfoWrap>
                       <h5>{currentData?.author ?? "-"}</h5>
-                      <small style={{ color: "#787878" }}>{currentData?.source ?? "-"}</small>
+                      {/* <small style={{ color: "#787878" }}>{currentData?.publisher ?? "-"}</small> */}
                     </M.BookInfoWrap>
                   </M.BookInfoWrapper>
                 </M.BookmarkInfoWrap>
               </M.ReplayBookIconWrap>
-              <M.SaveBtn>저장</M.SaveBtn>
+              <M.SaveBtn onClick={handleSave}>저장</M.SaveBtn>
             </M.StyledUnder02>
           </M.UnderContent>
         </M.Content02>

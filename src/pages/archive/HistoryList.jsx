@@ -1,49 +1,134 @@
 import styled from "styled-components";
 import HistoryCard from "./HistoryCard";
 import HistoryDetail from "./HistoryDetail";
-import { useState } from "react";
-
-const dummyData = [
-  {
-    id: 1,
-    date: "2025. 05. 27",
-    content:
-      "진정한 사랑이란, 반드시 두 사람의 자유가 서로 상대방을 인정하는 기초 위에 세워져야 한다. 이때 두 사람은 서로를 자기 자신처럼 또는 타자처럼 느끼면서, 어느 한편에서도 자기 초월을 포기하지 않고 또 자기를 불구로 만드는 일 없이 함께 세계 속에서 가치와 목적을 발견할 것이다. 또한 자기를 줌으로써 자기 자신을 찾고 세계를 풍요롭게 할 것이다.",
-    title: "제2의 성",
-    author: "시몬느 드 보부아르",
-    music: "Hollywood",
-    artist: "검정치마",
-  },
-  {
-    id: 2,
-    date: "2025. 05. 26",
-    content:
-      "살아남은 자들이 부끄러워하던 시대는 가고, 곧 1등이든 2등이든 무조건 살아남는 것이 최선이라는 시대가 왔다. 지금은 너를 떨어뜨리지 않으면 내가 죽는다는, 오직 단 한명만이 살아남는다는 ‘오징어 게임’, 서바이벌 게임의 세계관이 스크린을 지배하는 세상이 되었다. 그러나 나는 은밀히 믿고 있다. 액정화면 밖 진짜 세상은 다르다고, 거기에는 조용히, 그러나 치열하게, 자기만의 방식으로 살아남아 어떻게든 삶의 의미를 찾기 위해 싸우는 이들이 있다는 것을.",
-    title: "단 한 번의 삶",
-    author: "김영하",
-    music: "Rainy Days",
-    artist: "Lee Moon",
-  },
-];
+import { useState, useEffect } from "react";
+import Toast from "../../components/Toast";
 
 const HistoryList = () => {
+  const [historyList, setHistoryList] = useState([]);
   const [selectedCard, setSelectedCard] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const USER_ID = "user1";
+
+  // ✅ 데이터 가져오기
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // 1. 모든 history 불러오기
+        const historyRes = await fetch("http://localhost:8000/api/history");
+        const histories = await historyRes.json();
+
+        // 2. 북마크 목록 불러오기
+        const bookmarkRes = await fetch(`http://localhost:8000/api/bookmarks?userId=${USER_ID}`);
+        const bookmarks = await bookmarkRes.json(); // [{ _id, ...history, bookmarkId }]
+        const bookmarkedIds = bookmarks.map((item) => item._id); // history._id 기준
+
+        const likedMusicKeys = JSON.parse(localStorage.getItem("likedMusicIds") || "[]");
+
+        const merged = histories.map((item) => {
+          const key = `${item.music}___${item.artist}`;
+          return {
+            ...item,
+            bookmarked: bookmarkedIds.includes(item._id),
+            liked: likedMusicKeys.includes(key),
+          };
+        });
+
+        setHistoryList(merged);
+      } catch (err) {
+        console.error("데이터 불러오기 실패:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // ✅ 북마크 토글
+  const toggleBookmark = async (item) => {
+    const isBookmarked = item.bookmarked;
+    const url = "http://localhost:8000/api/bookmarks";
+
+    try {
+      if (isBookmarked) {
+        await fetch(url, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: USER_ID, historyId: item._id }),
+        });
+        setToast("북마크에서 삭제되었습니다!");
+      } else {
+        await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: USER_ID, historyId: item._id, folderId: 1 }),
+        });
+        setToast("북마크에 저장되었습니다!");
+      }
+
+      // 상태 업데이트
+      setHistoryList((prev) => prev.map((el) => (el._id === item._id ? { ...el, bookmarked: !isBookmarked } : el)));
+
+      // 디테일 팝업 상태도 함께 반영
+      if (selectedCard && selectedCard._id === item._id) {
+        setSelectedCard({ ...item, bookmarked: !isBookmarked });
+      }
+
+      setToast(isBookmarked ? "북마크에서 삭제되었습니다!" : "북마크에 저장되었습니다!");
+      setTimeout(() => setToast(null), 2000);
+    } catch (err) {
+      console.error("북마크 처리 실패:", err);
+    }
+  };
+
+  // 음악 좋아요 토글 (LocalStorage 활용)
+  const toggleMusicLike = (item) => {
+    const key = `${item.music}___${item.artist}`;
+    const likedMusics = JSON.parse(localStorage.getItem("likedMusicIds") || "[]");
+
+    const updated = item.liked ? likedMusics.filter((k) => k !== key) : [...likedMusics, key];
+
+    localStorage.setItem("likedMusicIds", JSON.stringify(updated));
+
+    setHistoryList((prev) => prev.map((el) => (el._id === item._id ? { ...el, liked: !item.liked } : el)));
+
+    if (selectedCard && selectedCard._id === item._id) {
+      setSelectedCard({ ...item, liked: !item.liked });
+    }
+  };
 
   return (
     <Container>
+      {toast && <Toast message={toast} />}
       <TopRow>
         <Title>History</Title>
         <SearchBarWrapper>
           <input type="text" placeholder="검색어를 입력하세요" />
         </SearchBarWrapper>
       </TopRow>
+
       <CardList>
-        {dummyData.map((item) => (
-          <HistoryCard key={item.id} data={item} onClick={() => setSelectedCard(item)} />
+        {historyList.map((item) => (
+          <HistoryCard
+            key={item._id}
+            data={item}
+            onClick={() => setSelectedCard(item)}
+            onToggleBookmark={() => toggleBookmark(item)}
+            onToggleLike={() => toggleMusicLike(item)}
+            selected={false}
+            isEditMode={false}
+          />
         ))}
       </CardList>
 
-      {selectedCard && <HistoryDetail data={selectedCard} onClose={() => setSelectedCard(null)} />}
+      {selectedCard && (
+        <HistoryDetail
+          data={selectedCard}
+          onClose={() => setSelectedCard(null)}
+          onToggleBookmark={() => toggleBookmark(selectedCard)}
+          onToggleLike={() => toggleMusicLike(selectedCard)}
+        />
+      )}
     </Container>
   );
 };

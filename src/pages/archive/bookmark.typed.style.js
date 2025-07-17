@@ -83,7 +83,9 @@ S.EditButton = styled.button`
 
 S.MenuWrapper = styled.div`
   display: flex;
-  align-items: center; // 아이콘을 가운데 정렬
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
 `;
 
 S.MoreBtn = styled.button`
@@ -104,10 +106,11 @@ S.CardColumn = styled.div`
 `;
 
 // 편집 모드
-S.EditRow = styled.div`
+S.FolderEditRow = styled.div`
+  width: 100%; /* ✅ 너비 꽉 차게 */
   display: flex;
+  justify-content: space-between; /* ✅ 좌우 정렬 */
   align-items: center;
-  gap: 8px;
   margin-top: 10px;
 `;
 
@@ -117,12 +120,29 @@ S.DeleteButton = styled.button`
   color: #f96f3d;
   font-size: 14px;
   cursor: pointer;
-  padding: 0;
 `;
 
 S.SelectedText = styled.span`
   font-size: 14px;
   color: gray;
+  display: flex;
+  align-items: center;
+`;
+
+S.CardWrapper = styled.div`
+  border: ${({ selected }) => (selected ? "2px solid #f96f3d" : "2px solid transparent")};
+  border-radius: 8px;
+  padding: 4px;
+  transition: border 0.2s ease-in-out;
+  cursor: ${({ isEditMode }) => (isEditMode ? "pointer" : "default")};
+`;
+
+S.DoneButton = styled.button`
+  background: none;
+  border: none;
+  color: #444;
+  font-size: 14px;
+  cursor: pointer;
 `;
 
 // 디테일 팝업
@@ -259,38 +279,38 @@ S.Description = styled.div`
 
 // 폴더 생성
 S.Label = styled.label`
-    /* border: solid 1px red; */
-    width: 100%;
-    height: 120px;
-`
+  /* border: solid 1px red; */
+  width: 100%;
+  height: 120px;
+`;
 S.ImgWrapper = styled.div`
-    /* border-radius: 8px; */
-    width: 120px;
-    height: 120px;
-    margin-top: 0px;
-    background-color: #e0e0e0;
-    input{
-        display: none;
-    }
-`
+  /* border-radius: 8px; */
+  width: 120px;
+  height: 120px;
+  margin-top: 0px;
+  background-color: #e0e0e0;
+  input {
+    display: none;
+  }
+`;
 S.Profile = styled.img`
-    width: 120px;
-    height: 120px;
-    border: none;
-`
+  width: 120px;
+  height: 120px;
+  border: none;
+`;
 S.ImgUpload = styled.button`
-    background-color: #FEE9E2;
-    margin-top: 5px;
-    border-radius: 5px;
-    font-size: 12px;
-    padding: 2px;
-`
+  background-color: #fee9e2;
+  margin-top: 5px;
+  border-radius: 5px;
+  font-size: 12px;
+  padding: 2px;
+`;
 // NewFolder countText
 S.NewFolderTextCount = styled.span`
   font-size: 14px;
   color: gray;
   margin-top: 50px;
   margin-left: 6px;
-`
+`;
 
 export default S;

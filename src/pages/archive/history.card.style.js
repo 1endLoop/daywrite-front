@@ -9,7 +9,7 @@ Card.Card = styled.div`
   border-radius: 5px;
   font-family: pretendard;
   transition: border 0.2s ease;
-  cursor: pointer;
+  cursor: ${({ isEditMode }) => (isEditMode ? "pointer" : "default")};
 `;
 
 Card.Header = styled.div`
