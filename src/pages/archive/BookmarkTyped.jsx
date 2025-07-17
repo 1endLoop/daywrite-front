@@ -112,7 +112,8 @@ const BookmarkTyped = () => {
 
   const [selectedCard, setSelectedCard] = useState(null);
   const handleCardClick = (item) => {
-    setSelectedCard(item);
+    if (!isEditMode) setSelectedCard(item);
+    else handleCardSelect(item._id);
   };
 
   const handleClose = () => {
@@ -123,7 +124,12 @@ const BookmarkTyped = () => {
   const [selectedIds, setSelectedIds] = useState([]);
 
   const handleEditClick = () => {
-    setIsEditMode((prev) => !prev);
+    setIsEditMode(true);
+    setSelectedIds([]);
+  };
+
+  const handleEditDone = () => {
+    setIsEditMode(false);
     setSelectedIds([]);
   };
 
@@ -132,10 +138,30 @@ const BookmarkTyped = () => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   };
 
-  const handleDeleteSelected = () => {
-    const newItems = bookmarkItems.filter((item) => !selectedIds.includes(item._id));
-    setBookmarkItems(newItems);
-    setSelectedIds([]);
+  const handleDeleteSelected = async () => {
+    try {
+      // 1. 서버에 삭제 요청 보내기
+      await Promise.all(
+        selectedIds.map((id) =>
+          fetch("http://localhost:8000/api/bookmarks", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: "user1", historyId: id }),
+          })
+        )
+      );
+
+      // 2. 클라이언트 상태 업데이트
+      const newItems = bookmarkItems.filter((item) => !selectedIds.includes(item._id));
+      setBookmarkItems(newItems);
+      setSelectedIds([]);
+      setToast("삭제가 완료되었습니다!");
+      setTimeout(() => setToast(null), 2000);
+    } catch (error) {
+      console.error("삭제 실패:", error);
+      setToast("삭제 중 오류가 발생했습니다.");
+      setTimeout(() => setToast(null), 2000);
+    }
   };
 
   return (
@@ -151,31 +177,38 @@ const BookmarkTyped = () => {
       <S.ContentWrapper>
         <S.ThumbnailBox>
           <S.Thumbnail src="/assets/images/book-img.jpeg" />
+
           <S.FolderTitleRow>
             <S.FolderTitle>북마크한 모든 글</S.FolderTitle>
-            <S.MenuWrapper>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <S.MoreBtn onClick={handleMoreClick}>⋯</S.MoreBtn>
-              {dropdownInfo && (
-                <Dropdown
-                  refProp={dropdownRef}
-                  x={dropdownInfo.x}
-                  y={dropdownInfo.y}
-                  onClose={() => setDropdownOpen(false)}
-                >
-                  <li>이름변경</li>
-                  <li>폴더삭제</li>
-                </Dropdown>
-              )}
-            </S.MenuWrapper>
+            </div>
           </S.FolderTitleRow>
 
           {isEditMode ? (
-            <S.EditRow>
-              <S.DeleteButton onClick={handleDeleteSelected}>삭제</S.DeleteButton>
-              <S.SelectedText>{selectedIds.length}개 선택됨</S.SelectedText>
-            </S.EditRow>
+            <S.FolderEditRow>
+              <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                <S.DeleteButton onClick={handleDeleteSelected}>삭제</S.DeleteButton>
+                <S.SelectedText>{selectedIds.length}개 선택됨</S.SelectedText>
+              </div>
+              <S.DoneButton onClick={handleEditDone}>완료</S.DoneButton>
+            </S.FolderEditRow>
           ) : (
-            <S.EditButton onClick={handleEditClick}>편집</S.EditButton>
+            <S.FolderEditRow>
+              <S.EditButton onClick={handleEditClick}>편집</S.EditButton>
+            </S.FolderEditRow>
+          )}
+
+          {dropdownInfo && (
+            <Dropdown
+              refProp={dropdownRef}
+              x={dropdownInfo.x}
+              y={dropdownInfo.y}
+              onClose={() => setDropdownOpen(false)}
+            >
+              <li>이름변경</li>
+              <li>폴더삭제</li>
+            </Dropdown>
           )}
         </S.ThumbnailBox>
 
@@ -187,8 +220,8 @@ const BookmarkTyped = () => {
               onToggleBookmark={() => handleBookmark(item)}
               onToggleLike={() => toggleLike(item)}
               onClick={() => handleCardClick(item)}
-              selected={selectedIds.includes(item._id)}
               isEditMode={isEditMode}
+              selected={selectedIds.includes(item._id)} //
             />
           ))}
         </S.CardColumn>

@@ -3,7 +3,7 @@ import useClickOutside from "../../modules/hooks/useClickOutside";
 import Card from "./history.card.style";
 import Dropdown from "./dropdown.style";
 
-const HistoryCard = ({ data, onClick, onToggleBookmark, onToggleLike }) => {
+const HistoryCard = ({ data, onClick, onToggleBookmark, onToggleLike, isEditMode, selected }) => {
   const { createdAt, content, book, author, music, artist, bookmarked, liked } = data;
 
   const formattedDate = new Date(createdAt).toLocaleDateString("ko-KR", {
@@ -17,7 +17,11 @@ const HistoryCard = ({ data, onClick, onToggleBookmark, onToggleLike }) => {
   useClickOutside(dropdownRef, () => setOpenDropdown(false));
 
   return (
-    <Card.Card>
+    <Card.Card
+      onClick={onClick}
+      selected={isEditMode && selected ? true : false} // or !!(isEditMode && selected)
+      isEditMode={isEditMode}
+    >
       <Card.Header>
         <Card.Date>{formattedDate}</Card.Date>
         <Dropdown.Wrapper ref={dropdownRef} onClick={(e) => e.stopPropagation()}>
@@ -46,9 +50,7 @@ const HistoryCard = ({ data, onClick, onToggleBookmark, onToggleLike }) => {
           >
             <img
               src={
-                bookmarked
-                  ? "/assets/images/icons/svg/bookmark=on.svg"
-                  : "/assets/images/icons/svg/bookmark=off.svg"
+                bookmarked ? "/assets/images/icons/svg/bookmark=on.svg" : "/assets/images/icons/svg/bookmark=off.svg"
               }
               alt="bookmark"
             />
