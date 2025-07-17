@@ -6,7 +6,7 @@ const InquiryWrite = () => {
   const [type, setType] = useState('기타');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const email = 'SYD342@gmail.com'; // 실제로는 유저 상태에서 가져와야 함
+  const email = 'SYD342@gmail.com'; // 실제로는 로그인한 유저 이메일 받아오도록 수정 필요
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -14,14 +14,43 @@ const InquiryWrite = () => {
   const isWritePage = location.pathname.includes('/inquiry/write');
   const isListPage = location.pathname === '/mypage/inquiry';
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert('문의가 등록되었습니다.');
-    navigate('/mypage/inquiry');
+
+    if (!title.trim() || !content.trim()) {
+      alert('제목과 내용을 입력해주세요.');
+      return;
+    }
+
+    try {
+      const res = await fetch('http://localhost:8000/api/inquiry', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type,
+          title,
+          content,
+          email,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('문의 등록 실패');
+      }
+
+      alert('문의가 등록되었습니다.');
+      navigate('/mypage/inquiry');
+    } catch (error) {
+      alert('문의 등록 중 오류가 발생했습니다.');
+      console.error(error);
+    }
   };
 
   return (
     <Wrapper>
+      {/* 탭 메뉴는 Form 바깥에 */}
       <TabMenu>
         <Tab active={isWritePage} onClick={() => navigate('/mypage/inquiry/write')}>1:1 문의하기</Tab>
         <Tab active={isListPage} onClick={() => navigate('/mypage/inquiry')}>1:1 문의내역</Tab>
@@ -66,15 +95,17 @@ const InquiryWrite = () => {
 
 export default InquiryWrite;
 
+// styled-components
+
 const Wrapper = styled.div`
-  width: 85%;
-  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
 `;
 
 const TabMenu = styled.div`
   display: flex;
   gap: 24px;
-  margin-bottom: 32px;
 `;
 
 const Tab = styled.div`
@@ -88,7 +119,9 @@ const Tab = styled.div`
 
 const FormWrapper = styled.form`
   border-top: 1px solid #aaa;
-
+  width: 80%;         // 폼 가로 크기 줄이기
+  max-width: 800px;   // 최대 너비 제한 (더 넓어지지 않게)
+  margin: 19px 
 `;
 
 const Row = styled.div`
