@@ -3,8 +3,11 @@ import { useNavigate } from "react-router-dom";
 import M from "./main.form.style";
 import MainPopup from "./MainPopup";
 import MainPlaylistPopup from "./MainPlaylistPopup";
+import Toast from "../../components/Toast";
 
 const MainContainer = ({ isUpdate, setIsUpdate }) => {
+  const [toast, setToast] = useState(null); // 토스트
+  const [isBookmarked, setIsBookmarked] = useState(false);
   const [showLike, setShowLike] = useState(false);
   const [showBookmark, setShowBookmark] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -138,8 +141,63 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
     }
   };
 
+  // 북마크 핸들러 추가
+  // 북마크 핸들러
+  const handleBookmark = async () => {
+    if (!currentData || isBookmarked) return;
+
+    const historyData = {
+      content: currentData.typing,
+      book: currentData.title,
+      author: currentData.author,
+      publisher: currentData.publisher ?? "unknown",
+      publishedDate: currentData.publishedDate ?? "unknown",
+      bookCover: currentData.bookCover ?? "",
+      music: currentSong.title,
+      artist: currentSong.artist,
+    };
+
+    try {
+      const historyRes = await fetch("http://localhost:8000/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(historyData),
+      });
+
+      const savedHistory = await historyRes.json();
+      if (!historyRes.ok || !savedHistory._id) throw new Error("히스토리 저장 실패");
+
+      const bookmarkData = {
+        userId: "user1",
+        historyId: savedHistory._id,
+        folderId: 1,
+      };
+
+      const bookmarkRes = await fetch("http://localhost:8000/api/bookmarks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bookmarkData),
+      });
+
+      if (!bookmarkRes.ok) {
+        const err = await bookmarkRes.json();
+        throw new Error(err.message || "북마크 저장 실패");
+      }
+
+      setIsBookmarked(true);
+      setShowBookmark(true);
+      setToast("북마크에 저장되었습니다!");
+      setTimeout(() => setToast(null), 2000);
+      navigate("/bookmark");
+    } catch (err) {
+      console.error("북마크 저장 에러:", err);
+      alert("에러: " + err.message);
+    }
+  };
+
   return (
     <div>
+      {toast && <Toast message={toast} />}
       {showPopup && (
         <MainPopup
           type={popupType}
@@ -287,7 +345,9 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
                   <img src="/assets/images/icons/svg/replay.svg" alt="필사 새로고침" />
                 </M.ReplayBtn>
                 <M.BookmarkInfoWrap>
-                  <M.IconButton onClick={() => setShowBookmark(!showBookmark)}>
+                  <M.IconButton
+                    onClick={handleBookmark} // 북마크 저장 실행
+                  >
                     <img
                       src={
                         process.env.PUBLIC_URL +
