@@ -330,6 +330,8 @@ S.EditUserInfoContainer = styled.div`
   flex-direction: column;
   gap: 30px;
   margin-top: -40px;
+  overflow-x: hidden;
+  
 `;
 
 S.Avatar = styled.img`
