@@ -6,6 +6,7 @@ import MainPopup from "../main/MainPopup";
 import MainPlaylistPopup from "../main/MainPlaylistPopup";
 import CategoryPopup from "./CategoryPopup";
 import MoodSelect from "./MoodSelect";
+import { fetchRecommendedMusic } from "../../api/musicApi";
 
 const TypingPage = () => {
   const [writingData, setWritingData] = useState(null);
@@ -29,37 +30,46 @@ const TypingPage = () => {
   const [selectedKeywords, setSelectedKeywords] = useState(keywords);
   const [selectedGenres, setSelectedGenres] = useState(genres);
 
-  const dummyPlaylist = [
-    { img: "/assets/images/album_cover/love-on-top.jpg", title: "Love on Top", artist: "Beyonce", liked: true },
-    { img: "/assets/images/album_cover/love-sick-girls.jpg", title: "Love Sick Girls", artist: "BlackPink", liked: false },
-    { img: "/assets/images/album_cover/smiley.ori.jpg", title: "Smiley", artist: "YENA", liked: false },
-    { img: "/assets/images/album_cover/summernignt.lyn.jpg", title: "한여름 밤", artist: "Lyn", liked: true },
-    { img: "/assets/images/album_cover/the-winning.jpg", title: "the winning", artist: "IU", liked: true },
-  ];
-  const [currentSong, setCurrentSong] = useState(dummyPlaylist[0]);
+  // 추천 음악 리스트
 
+  const [musicList, setMusicList] = useState([]);
+  const [currentSong, setCurrentSong] = useState(null); 
+ 
   // 글 데이터 가져오기 함수
-  const fetchWriting = async () => {
-    try {
-      console.log("요청 중:", selectedKeywords, selectedGenres);
+const fetchWriting = async () => {
+  try {
+    console.log("요청 중:", selectedKeywords, selectedGenres);
 
-      const res = await axios.post("/api/writing/random", {
-        keywords: selectedKeywords,
-        genres: selectedGenres,
-      });
+    const res = await axios.post("/api/writing/random", {
+      keywords: selectedKeywords,
+      genres: selectedGenres,
+    });
 
-      console.log("응답데이터:", res.data);
+    console.log("응답데이터:", res.data);
 
-      if (!res?.data) {
-        alert("조건에 맞는 글이 없습니다.");
-        return;
-      }
-
-      setWritingData(res.data);
-    } catch (error) {
-      console.error("글 불러오기 실패:", error);
+    if (!res?.data) {
+      alert("조건에 맞는 글이 없습니다.");
+      return;
     }
-  };
+
+    setWritingData(res.data);
+
+    // 음악 API도 같은 함수 내에서 호출
+    const music = await fetchRecommendedMusic(selectedKeywords, selectedGenres);
+    const parsed = music.map((track) => ({
+      img: track.image?.[2]?.["#text"] || "/assets/images/album_cover/default.jpg", // 기본 이미지 fallback
+      title: track.name,
+      artist: track.artist,
+      liked: false,
+    }));
+    setMusicList(parsed);
+    setCurrentSong(parsed[0]); // 첫 곡을 현재 곡으로 설정
+
+  } catch (error) {
+    console.error("글 불러오기 실패:", error);
+  }
+};
+
 
   useEffect(() => {
     fetchWriting();
@@ -112,7 +122,7 @@ const TypingPage = () => {
       )}
 
       {showPlaylist && (
-        <MainPlaylistPopup onClose={() => setShowPlaylist(false)} data={dummyPlaylist} />
+        <MainPlaylistPopup onClose={() => setShowPlaylist(false)} data={musicList} />
       )}
 
       <M.OuterWrap>
@@ -216,6 +226,7 @@ const TypingPage = () => {
                       alt="like"
                     />
                   </M.IconButton>
+                {currentSong && (
                   <M.Album>
                     <M.AlbumImg src={currentSong.img} />
                     <M.AlbumInfo>
@@ -223,6 +234,8 @@ const TypingPage = () => {
                       <h6 style={{ color: "#787878" }}>{currentSong.artist}</h6>
                     </M.AlbumInfo>
                   </M.Album>
+
+                )}
                 </M.StyledMusic>
                 <M.PlayListIconWrap>
                   <M.PlayIconWrap>
