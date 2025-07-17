@@ -298,7 +298,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
                     <h4>{currentData?.title ?? "-"}</h4>
                     <M.BookInfoWrap>
                       <h5>{currentData?.author ?? "-"}</h5>
-                      <small style={{ color: "#787878" }}>{currentData?.source ?? "-"}</small>
+                      {/* <small style={{ color: "#787878" }}>{currentData?.publisher ?? "-"}</small> */}
                     </M.BookInfoWrap>
                   </M.BookInfoWrapper>
                 </M.BookmarkInfoWrap>

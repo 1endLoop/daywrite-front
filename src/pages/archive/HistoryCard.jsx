@@ -47,8 +47,8 @@ const HistoryCard = ({ data, onClick, onToggleBookmark, onToggleLike }) => {
             <img
               src={
                 bookmarked
-                  ? "../assets/images/icons/svg/bookmark=on.svg"
-                  : "../assets/images/icons/svg/bookmark=off.svg"
+                  ? "/assets/images/icons/svg/bookmark=on.svg"
+                  : "/assets/images/icons/svg/bookmark=off.svg"
               }
               alt="bookmark"
             />
@@ -65,7 +65,7 @@ const HistoryCard = ({ data, onClick, onToggleBookmark, onToggleLike }) => {
             }}
           >
             <img
-              src={liked ? "../assets/images/icons/svg/like=on.svg" : "../assets/images/icons/svg/like=off.svg"}
+              src={liked ? "/assets/images/icons/svg/like=on.svg" : "/assets/images/icons/svg/like=off.svg"}
               alt="like"
             />
           </Card.Icon>
