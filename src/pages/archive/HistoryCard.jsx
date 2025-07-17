@@ -3,8 +3,8 @@ import useClickOutside from "../../modules/hooks/useClickOutside";
 import Card from "./history.card.style";
 import Dropdown from "./dropdown.style";
 
-const HistoryCard = ({ data, onClick, onToggleBookmark }) => {
-  const { createdAt, content, book, author, music, artist, bookmarked } = data;
+const HistoryCard = ({ data, onClick, onToggleBookmark, onToggleLike, isEditMode, selected }) => {
+  const { createdAt, content, book, author, music, artist, bookmarked, liked } = data;
 
   const formattedDate = new Date(createdAt).toLocaleDateString("ko-KR", {
     year: "numeric",
@@ -12,14 +12,16 @@ const HistoryCard = ({ data, onClick, onToggleBookmark }) => {
     day: "2-digit",
   });
 
-  const [liked, setLiked] = useState(true);
-
   const [openDropdown, setOpenDropdown] = useState(false);
   const dropdownRef = useRef(null);
   useClickOutside(dropdownRef, () => setOpenDropdown(false));
 
   return (
-    <Card.Card>
+    <Card.Card
+      onClick={onClick}
+      selected={isEditMode && selected ? true : false} // or !!(isEditMode && selected)
+      isEditMode={isEditMode}
+    >
       <Card.Header>
         <Card.Date>{formattedDate}</Card.Date>
         <Dropdown.Wrapper ref={dropdownRef} onClick={(e) => e.stopPropagation()}>
@@ -39,17 +41,16 @@ const HistoryCard = ({ data, onClick, onToggleBookmark }) => {
 
       <Card.MetaWrapper>
         <Card.MetaLeft>
+          {/* ✅ 북마크 버튼: 책 정보 옆 */}
           <Card.Icon
             onClick={(e) => {
-              e.stopPropagation(); // 카드 클릭 방지
-              onToggleBookmark(); // 부모의 북마크 핸들러 호출
+              e.stopPropagation();
+              onToggleBookmark(data);
             }}
           >
             <img
               src={
-                bookmarked
-                  ? "../assets/images/icons/svg/bookmark=on.svg"
-                  : "../assets/images/icons/svg/bookmark=off.svg"
+                bookmarked ? "/assets/images/icons/svg/bookmark=on.svg" : "/assets/images/icons/svg/bookmark=off.svg"
               }
               alt="bookmark"
             />
@@ -59,9 +60,14 @@ const HistoryCard = ({ data, onClick, onToggleBookmark }) => {
         </Card.MetaLeft>
 
         <Card.MetaRight>
-          <Card.Icon onClick={() => setLiked((prev) => !prev)}>
+          <Card.Icon
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleLike(data);
+            }}
+          >
             <img
-              src={liked ? "../assets/images/icons/svg/like=on.svg" : "../assets/images/icons/svg/like=off.svg"}
+              src={liked ? "/assets/images/icons/svg/like=on.svg" : "/assets/images/icons/svg/like=off.svg"}
               alt="like"
             />
           </Card.Icon>

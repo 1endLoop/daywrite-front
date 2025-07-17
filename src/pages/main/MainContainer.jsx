@@ -3,8 +3,11 @@ import { useNavigate } from "react-router-dom";
 import M from "./main.form.style";
 import MainPopup from "./MainPopup";
 import MainPlaylistPopup from "./MainPlaylistPopup";
+import Toast from "../../components/Toast";
 
 const MainContainer = ({ isUpdate, setIsUpdate }) => {
+  const [toast, setToast] = useState(null); // 토스트
+  const [isBookmarked, setIsBookmarked] = useState(false);
   const [showLike, setShowLike] = useState(false);
   const [showBookmark, setShowBookmark] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -57,7 +60,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
         typing: data.content,
         title: data.book,
         author: data.author,
-        source: data.publisher || "unknown",
+        publisher: data.publisher || "unknown",
         publishedDate: data.publishedDate ?? "unknown",
         bookCover: data.bookCover ?? "",
       });
@@ -138,8 +141,63 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
     }
   };
 
+  // 북마크 핸들러 추가
+  // 북마크 핸들러
+  const handleBookmark = async () => {
+    if (!currentData || isBookmarked) return;
+
+    const historyData = {
+      content: currentData.typing,
+      book: currentData.title,
+      author: currentData.author,
+      publisher: currentData.publisher ?? "unknown",
+      publishedDate: currentData.publishedDate ?? "unknown",
+      bookCover: currentData.bookCover ?? "",
+      music: currentSong.title,
+      artist: currentSong.artist,
+    };
+
+    try {
+      const historyRes = await fetch("http://localhost:8000/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(historyData),
+      });
+
+      const savedHistory = await historyRes.json();
+      if (!historyRes.ok || !savedHistory._id) throw new Error("히스토리 저장 실패");
+
+      const bookmarkData = {
+        userId: "user1",
+        historyId: savedHistory._id,
+        folderId: 1,
+      };
+
+      const bookmarkRes = await fetch("http://localhost:8000/api/bookmarks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bookmarkData),
+      });
+
+      if (!bookmarkRes.ok) {
+        const err = await bookmarkRes.json();
+        throw new Error(err.message || "북마크 저장 실패");
+      }
+
+      setIsBookmarked(true);
+      setShowBookmark(true);
+      setToast("북마크에 저장되었습니다!");
+      setTimeout(() => setToast(null), 2000);
+      navigate("/bookmark");
+    } catch (err) {
+      console.error("북마크 저장 에러:", err);
+      alert("에러: " + err.message);
+    }
+  };
+
   return (
     <div>
+      {toast && <Toast message={toast} />}
       {showPopup && (
         <MainPopup
           type={popupType}
@@ -161,10 +219,10 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
           </M.TitleWrap>
           <M.TitleIconWrap>
             <M.IcBtn onClick={handleSettingClick}>
-              <img src="/assets/images/icons/settings.png" alt="필사 테마 설정" />
+              <img src="/assets/images/icons/svg/settings.svg" alt="필사 테마 설정" />
             </M.IcBtn>
             <M.IcBtn onClick={() => setInputValue("")}>
-              <img src="/assets/images/icons/eraser.png" alt="필사글 전체 지우기" />
+              <img src="/assets/images/icons/svg/eraser.svg" alt="필사글 전체 지우기" />
             </M.IcBtn>
           </M.TitleIconWrap>
         </M.Content01>
@@ -238,7 +296,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
                   <img
                     src={
                       process.env.PUBLIC_URL +
-                      (showLike ? "/assets/images/icons/like-on-color.png" : "/assets/images/icons/like-off-color.png")
+                      (showLike ? "/assets/images/icons/svg/like=on.svg" : "/assets/images/icons/svg/like=off.svg")
                     }
                     alt="like"
                   />
@@ -254,22 +312,26 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
               <M.PlayListIconWrap>
                 <M.PlayIconWrap>
                   <M.PlayIcon>
-                    <img src="/assets/images/icons/skip_previous.png" alt="재생 이전" />
+                    <img src="/assets/images/icons/svg/music_prev.svg" alt="재생 이전" />
                   </M.PlayIcon>
                   <M.PlayIcon onClick={handlePlayToggle}>
                     <img
-                      src={isPlaying ? "/assets/images/icons/music-pause.png" : "/assets/images/icons/music-play.png"}
+                      src={
+                        isPlaying
+                          ? "/assets/images/icons/svg/music_stop.svg"
+                          : "/assets/images/icons/svg/music_play.svg"
+                      }
                       alt={isPlaying ? "일시정지" : "재생"}
                     />
                   </M.PlayIcon>
                   <M.PlayIcon>
-                    <img src="/assets/images/icons/skip_next.png" alt="재생 다음" />
+                    <img src="/assets/images/icons/svg/music_next.svg" alt="재생 다음" />
                   </M.PlayIcon>
                 </M.PlayIconWrap>
                 <M.PlayListWrap onClick={() => setShowPlaylist(!showPlaylist)}>
                   <h4>PLAY LIST</h4>
                   <M.IcBtn>
-                    <img src="/assets/images/icons/list.png" alt="플레이리스트" />
+                    <img src="/assets/images/icons/svg/list.svg" alt="플레이리스트" />
                   </M.IcBtn>
                 </M.PlayListWrap>
               </M.PlayListIconWrap>
@@ -280,16 +342,18 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
             <M.StyledUnder02>
               <M.ReplayBookIconWrap>
                 <M.ReplayBtn onClick={handleRefresh}>
-                  <img src="/assets/images/icons/replay.png" alt="필사 새로고침" />
+                  <img src="/assets/images/icons/svg/replay.svg" alt="필사 새로고침" />
                 </M.ReplayBtn>
                 <M.BookmarkInfoWrap>
-                  <M.IconButton onClick={() => setShowBookmark(!showBookmark)}>
+                  <M.IconButton
+                    onClick={handleBookmark} // 북마크 저장 실행
+                  >
                     <img
                       src={
                         process.env.PUBLIC_URL +
                         (showBookmark
-                          ? "/assets/images/icons/bookmark-on-color.png"
-                          : "/assets/images/icons/bookmark-off-color.png")
+                          ? "/assets/images/icons/svg/bookmark=on.svg"
+                          : "/assets/images/icons/svg/bookmark=off.svg")
                       }
                       alt="bookmark"
                     />
@@ -298,7 +362,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
                     <h4>{currentData?.title ?? "-"}</h4>
                     <M.BookInfoWrap>
                       <h5>{currentData?.author ?? "-"}</h5>
-                      <small style={{ color: "#787878" }}>{currentData?.source ?? "-"}</small>
+                      {/* <small style={{ color: "#787878" }}>{currentData?.publisher ?? "-"}</small> */}
                     </M.BookInfoWrap>
                   </M.BookInfoWrapper>
                 </M.BookmarkInfoWrap>
