@@ -8,9 +8,11 @@ import SignUpPopup from './SignUpPopup';
 
 const SignUpForm = () => {
   const {
-    register, handleSubmit, getValues, setError, clearErrors, 
+    register, handleSubmit, getValues, setError, clearErrors, watch,
     formState: {isSubmitting, isSubmitted, errors }
   } = useForm({ mode: "onSubmit" })
+
+  const watchedValues = watch(['email', 'nickname', 'password', 'passwordConfirm']);
   
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[!@#])[\da-zA-Z!@#]{8,}$/;
@@ -106,31 +108,56 @@ const SignUpForm = () => {
   };
 
 // 필수영역 입력 설정
-  const isFormValid =
-    getValues("email") &&
-    getValues("authCode") &&
-    getValues("nickname") &&
-    getValues("password") &&
-    getValues("passwordConfirm") &&
-    agreements.terms &&
-    agreements.privacy;
+const isFormValid =
+  watchedValues[0] &&  // email
+  authVerified &&
+  watchedValues[1] &&  // nickname
+  nicknameChecked &&
+  watchedValues[2] &&  // password
+  watchedValues[3] &&  // passwordConfirm
+  agreements.terms &&
+  agreements.privacy;
+
 
 // 팝업설정
-  const [showPopup, setShowPopup] = useState(false);
+const [showTermsPopup, setShowTermsPopup] = useState(false);  // 약관
+const [showSuccessPopup, setShowSuccessPopup] = useState(false);  // 회원가입 성공
 
 // 회원가입 성공 시 로그인 화면 이동
   const navigate = useNavigate()
 
   return (
     <S.LoginContainer>
-      {showPopup && (
-        <SignUpPopup
-          title="이용약관 동의"
-          content="회원가입 시점에 이용자로부터 수집하는 개인정보는 아래와 같습니다. 회원 가입 시 필수항목으로 아이디, 비밀번호, 이름, 생년월일, 성별, 휴대전화번호를, 선택항목으로 본인확인 이메일주소를 수집합니다. 실명 인증된 아이디로 가입 시, 암호화된 동일인 식별정보(CI), 중복가입 확인정보(DI), 내외국인 정보를 함께 수집합니다. 만 14세 미만 아동의 경우, 법정대리인의 동의를 받고 있으며, 휴대전화번호 또는 아이핀 인증을 통해 법정대리인의 동의를 확인하고 있습니다. 이 과정에서 법정대리인의 정보(법정대리인의 이름, 중복가입확인정보(DI), 휴대전화번호(아이핀 인증인 경우 아이핀번호))를 추가로 수집합니다. 비밀번호 없이 회원 가입 시에는 필수항목으로 아이디, 이름, 생년월일, 휴대전화번호를, 선택항목으로 비밀번호를 수집합니다. 단체 회원가입 시 필수 항목으로 단체아이디, 비밀번호, 단체이름, 이메일주소, 휴대전화번호를, 선택항목으로 단체 대표자명을 수집합니다."
-          onClose={() => setShowPopup(false)}
-          onConfirm={() => setShowPopup(false)}
-        />
-      )}
+    {/* ✅ 약관 동의용 팝업 */}
+    {showTermsPopup && (
+      <SignUpPopup
+        title="이용약관 동의"
+        content="사법권은 법관으로 구성된 법원에 속한다. 국가는 과학기술의 혁신과 정보 및 인력의 개발을 통하여 국민경제의 발전에 노력하여야 한다. 모든 국민은 근로의 권리를 가진다. 국가는 사회적·경제적 방법으로 근로자의 고용의 증진과 적정임금의 보장에 노력하여야 하며, 법률이 정하는 바에 의하여 최저임금제를 시행하여야 한다.
+          위원은 정당에 가입하거나 정치에 관여할 수 없다. 대통령은 국가의 원수이며, 외국에 대하여 국가를 대표한다. 누구든지 체포 또는 구속을 당한 때에는 즉시 변호인의 조력을 받을 권리를 가진다. 다만, 형사피고인이 스스로 변호인을 구할 수 없을 때에는 법률이 정하는 바에 의하여 국가가 변호인을 붙인다.
+          정당의 설립은 자유이며, 복수정당제는 보장된다. 모든 국민은 신체의 자유를 가진다. 누구든지 법률에 의하지 아니하고는 체포·구속·압수·수색 또는 심문을 받지 아니하며, 법률과 적법한 절차에 의하지 아니하고는 처벌·보안처분 또는 강제노역을 받지 아니한다. 국가는 대외무역을 육성하며, 이를 규제·조정할 수 있다."
+        onClose={() => setShowTermsPopup(false)}
+        onConfirm={() => setShowTermsPopup(false)}
+        showCancel={false}
+      />
+    )}
+
+    {/* ✅ 회원가입 성공 팝업 */}
+    {showSuccessPopup && (
+      <SignUpPopup
+        title="회원가입 하시겠습니까?"
+        content="Welcome to daywrite!"
+        onConfirm={() => {
+          localStorage.clear();
+          setShowSuccessPopup(false);
+          navigate("/login");
+        }}
+        onClose={() => {
+          setShowSuccessPopup(false);
+        }}
+        showCancel={true}
+        
+      />
+    )}
 
 
       <S.LoginLeftBox>
@@ -151,22 +178,20 @@ const SignUpForm = () => {
               email: datas.email,
               password: datas.password,
               nickname : datas.nickname,
-              // name: datas.name
+              name: datas.name
             })
           })
           .then((res) => res.json())
           .then((res) => {
-            console.log(res)
-            if(!res.registerSuccess){
-              alert(res.message)
+            console.log(res);
+            if (!res.registerSuccess) {
+              alert(res.message);
               return;
-            }else { // 회원가입 성공 메시지 후 로그인 패이지 이동
-              alert(res.message)
-              // navigate("/login)
+            } else {
+              setShowSuccessPopup(true);
             }
           })
           .catch(console.log)
-          console.log(datas)
         })}>
 
           <S.FormSection>
@@ -364,7 +389,7 @@ const SignUpForm = () => {
                         </>
                       }
                     />
-                    <S.TermsDetailButton type="button" onClick={() => setShowPopup(true)}>
+                    <S.TermsDetailButton type="button" onClick={() => setShowTermsPopup(true)}>
                       <span>더보기</span>
                       <img src={process.env.PUBLIC_URL + '/assets/images/icons/right.png'} alt="화살표 아이콘" />
                     </S.TermsDetailButton>
@@ -383,7 +408,7 @@ const SignUpForm = () => {
                         </>
                       }
                     />
-                    <S.TermsDetailButton type="button" onClick={() => setShowPopup(true)}>
+                    <S.TermsDetailButton type="button" onClick={() => setShowTermsPopup(true)}>
                       <span>더보기</span>
                       <img src={process.env.PUBLIC_URL + '/assets/images/icons/right.png'} alt="화살표 아이콘" />
                     </S.TermsDetailButton>
@@ -412,8 +437,9 @@ const SignUpForm = () => {
                 <BasicButton 
                   type="submit" 
                   customStyle={filledButtonCSS} 
-                  // disabled={!isFormValid} 
-                  style={{ width: '100%' }}>
+                  disabled={!isFormValid} 
+                  style={{ width: '100%' }}
+                >
                   회원가입
                 </BasicButton>
               </div>

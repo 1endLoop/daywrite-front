@@ -33,7 +33,7 @@ P.CloseIcon = styled.button`
 `;
 
 P.PopupTitle = styled.h2`
-  font-size: 28px;
+  font-size: 26px;
   margin-bottom: 16px;
   
 `;
@@ -48,5 +48,17 @@ P.PopupContent = styled.p`
   text-align: left;
   margin-bottom: 32px;
 `;
+
+P.ButtonWrapper = styled.div`
+  width: 423px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+`;
+
+P.BasicButton = styled.div`
+  width: 100%;
+`
 
 export default P;

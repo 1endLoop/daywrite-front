@@ -149,8 +149,8 @@ const Button = styled.button`
 
 // Filled Button 스타일
 export const filledButtonCSS = css`
-  /* width: 423px; */
-  padding: 17px 90px;
+  width: 423px;
+  padding: 17px 0;
   background: #282828;
   justify-content: center;
   align-items: center;
@@ -181,9 +181,9 @@ export const filledButtonCSS = css`
 
 // Outline Button 스타일
 export const outlineButtonCSS = css`
-  width: 100%;
-  height: 57px;
-  padding: 11px 0;
+  width: 420px;
+  /* height: 57px; */
+  padding: 15px 0;
   border: 2px solid #282828;
   font-size: 20px;
   font-family: Pretendard;

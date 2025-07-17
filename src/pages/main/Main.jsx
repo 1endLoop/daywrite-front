@@ -1,7 +1,8 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import S from "./style";
 import MainContainer from "./MainContainer";
+import BasicButton from "../../components/button/BasicButton";
 
 const Main = () => {
   return (
@@ -20,9 +21,9 @@ const Main = () => {
             <Link to="/community">community</Link>
             <Link to="/mypage">my page</Link>
           </S.Nav>
-          
+
           <S.Login>
-            <Link to="/login">login</Link>
+            <Link to="/login"> login </Link>
           </S.Login>
         </S.HeaderContent>
       </S.Header>
