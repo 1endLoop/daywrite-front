@@ -1,7 +1,8 @@
-import React from "react";
-import { Link, Outlet } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, Outlet, useNavigate } from "react-router-dom";
 import S from "./style";
 import { useBackground } from "../../contexts/BackgroundContext";
+import axios from "axios";
 
 const Layout = () => {
   const { backgroundImage } = useBackground();

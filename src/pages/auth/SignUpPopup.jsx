@@ -1,9 +1,15 @@
 import React from 'react';
 import BasicButton from '../../components/button/BasicButton';
 import P from "./signup.popup.style";
-import { filledButtonCSS } from '../../components/button/style';
+import { filledButtonCSS, outlineButtonCSS } from '../../components/button/style';
 
-const SignUpPopup = ({ title, content, onClose, onConfirm }) => {
+const SignUpPopup = ({ 
+  title, 
+  content, 
+  onClose, 
+  onConfirm, 
+  showCancel = false 
+}) => {
   return (
     <P.ModalBackdrop onClick={onClose}>
       <P.ModalBox onClick={e => e.stopPropagation()}>
@@ -13,8 +19,25 @@ const SignUpPopup = ({ title, content, onClose, onConfirm }) => {
           </P.CloseIcon>
         </P.PopupTitle>
         <P.PopupContent>{content}</P.PopupContent>
-        <BasicButton  customStyle={filledButtonCSS} onClick={onConfirm}>확인</BasicButton>
-      </P.ModalBox>
+        <P.ButtonWrapper>
+          {showCancel && (
+            <BasicButton
+              type="button"
+              customStyle={outlineButtonCSS}
+              onClick={onClose}
+            >
+              취소
+            </BasicButton>
+          )}
+          <BasicButton
+            type="button"
+            customStyle={filledButtonCSS}
+            onClick={onConfirm}
+          >
+            확인
+          </BasicButton>
+        </P.ButtonWrapper>
+        </P.ModalBox>
     </P.ModalBackdrop>
   );
 };

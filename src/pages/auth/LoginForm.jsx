@@ -3,24 +3,32 @@ import { useForm } from 'react-hook-form';
 import L from './login.form.style';
 import BasicButton from '../../components/button/BasicButton'
 import { filledButtonCSS } from '../../components/button/style';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { setUserStatus, setUser } from '../../modules/user/user';
+import LoginFailPopup from './LoginFailPopup';
+
 
 const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [loginFailPopup, setLoginFailPopup] = useState(false);
 
   const {
     register, handleSubmit, getValues, formState: {isSubmitting, isSubmitted, errors }
-  } = useForm({ mode: "onSubmit" })
-  
+  } = useForm({ mode: "onChange" })
+
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[!@#])[\da-zA-Z!@#]{8,}$/;
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
 
-  const onSubmit = async (data) => { console.log(data); };
+  const userStatus = useSelector((state) => state.user.isLogin);
+  const currentUser = useSelector((state) => state.user.currentUser);
+
 
   return (
     <L.LoginContainer>
-
       <L.LoginLeftBox>
         <L.Logo src="/assets/images/logo.png" alt="logo" />
         <L.LoginSubText>글과 음악이 함께하는 공간.</L.LoginSubText>
@@ -28,7 +36,46 @@ const LoginForm = () => {
 
 
       <L.LoginRightBox>
-        <L.Form onSubmit={handleSubmit(onSubmit)}>
+      <L.Form onSubmit={handleSubmit(async (datas) => {
+        // submit이 클릭되었을 때 가로채어 데이터들을 처리한다.
+        console.log(datas)
+
+        await fetch(`${process.env.REACT_APP_BACKEND_URL}/auth/local`, {
+          method : "POST",
+          headers : {
+            "Content-Type" : "application/json"
+          },
+          body : JSON.stringify({
+            email: datas.email,
+            password: datas.password,
+          })
+        })
+        .then(async (res) => {
+          // 실패했다면
+          if(!res.ok) {
+            const errorResponse = await res.json();
+            throw new Error(errorResponse.message || "로그인에 실패했습니다.")
+          }
+          return res.json()
+        })
+        .then((res) => {
+          // 성공했다면
+          const { accessToken } = res;
+          // 로그인을 완료한 유저의 상태를 리덕스에 저장하는 코드
+          console.log(res)
+          // console.log(res.accessToken)
+          localStorage.clear();
+          localStorage.setItem("token", accessToken);
+          dispatch(setUser(res.currentUser));  // 사용자 정보 저장
+          dispatch(setUserStatus(true));       // 로그인 상태 true로 변경
+          navigate("/");
+
+        })
+        .catch(async (err) => {
+          console.error("로그인 실패:", err.message);
+          setLoginFailPopup(true);
+        });
+      })}>
 
           <L.FormSection>
             <L.Title>로그인</L.Title>
@@ -109,6 +156,9 @@ const LoginForm = () => {
       </L.Form>
       </L.LoginRightBox>
 
+    {loginFailPopup && (
+      <LoginFailPopup onClose={() => setLoginFailPopup(false)} />
+    )}
 
     </L.LoginContainer>
   );
