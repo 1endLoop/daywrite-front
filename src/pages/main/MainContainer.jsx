@@ -141,13 +141,15 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
     }
   };
 
-  // 북마크 핸들러 추가
-  // 북마크 핸들러
+  // 북마크 핸들러 (히스토리 저장 후 북마크 저장까지 연계)
   const handleBookmark = async () => {
-    if (!currentData || isBookmarked) return;
+    if (!currentData || isBookmarked || inputValue.trim() === "") {
+      alert("필사 내용을 입력한 후 북마크할 수 있어요!");
+      return;
+    }
 
     const historyData = {
-      content: currentData.typing,
+      content: inputValue,
       book: currentData.title,
       author: currentData.author,
       publisher: currentData.publisher ?? "unknown",
@@ -158,18 +160,25 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
     };
 
     try {
+      // 1. 히스토리 저장
       const historyRes = await fetch("http://localhost:8000/api/history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(historyData),
       });
 
-      const savedHistory = await historyRes.json();
-      if (!historyRes.ok || !savedHistory._id) throw new Error("히스토리 저장 실패");
+      const historyJson = await historyRes.json();
+      const historyId = historyJson.data?._id;
 
+      if (!historyRes.ok || !historyId) {
+        console.error("히스토리 저장 응답:", historyJson);
+        throw new Error("히스토리 저장 실패");
+      }
+
+      // 2. 북마크 저장
       const bookmarkData = {
         userId: "user1",
-        historyId: savedHistory._id,
+        historyId,
         folderId: 1,
       };
 
@@ -180,15 +189,19 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
       });
 
       if (!bookmarkRes.ok) {
-        const err = await bookmarkRes.json();
-        throw new Error(err.message || "북마크 저장 실패");
+        const errorRes = await bookmarkRes.json();
+        console.error("북마크 저장 실패 응답:", errorRes);
+        throw new Error(errorRes.message || "북마크 저장 실패");
       }
 
+      // 3. 상태 및 UI 갱신
       setIsBookmarked(true);
       setShowBookmark(true);
       setToast("북마크에 저장되었습니다!");
       setTimeout(() => setToast(null), 2000);
-      navigate("/bookmark");
+
+      // 4. 북마크 폴더로 이동
+      navigate("/archive/bookmark/typed/1");
     } catch (err) {
       console.error("북마크 저장 에러:", err);
       alert("에러: " + err.message);

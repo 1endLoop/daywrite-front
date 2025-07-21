@@ -158,7 +158,7 @@ const BookmarkSection = ({ title, type }) => {
               title={item.title}
               type={item.type}
               count={item.count}
-              imageUrl={item.imageUrl || "/assets/images/default-book-img.png"}
+              imageUrl={item.thumbnailUrl || "/assets/images/book-img.jpeg"}
               onMoreClick={(e) => handleMoreClick(e, item)}
               onClick={() =>
                 navigate(`/archive/bookmark/${type === "글" ? "typed" : "played"}/${item.id}`)

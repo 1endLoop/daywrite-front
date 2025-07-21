@@ -3,7 +3,7 @@ import useClickOutside from "../../modules/hooks/useClickOutside";
 import Card from "./history.card.style";
 import Dropdown from "./dropdown.style";
 
-const HistoryCard = ({ data, onClick, onToggleBookmark, onToggleLike, isEditMode, selected }) => {
+const HistoryCard = ({ data, onClick, onToggleBookmark, onToggleLike, isEditMode, selected, onDelete }) => {
   const { createdAt, content, book, author, music, artist, bookmarked, liked } = data;
 
   const formattedDate = new Date(createdAt).toLocaleDateString("ko-KR", {
@@ -30,7 +30,14 @@ const HistoryCard = ({ data, onClick, onToggleBookmark, onToggleLike, isEditMode
           {openDropdown && (
             <Dropdown.Menu>
               <Dropdown.Item onClick={() => alert("공유하기!")}>공유하기</Dropdown.Item>
-              <Dropdown.Item onClick={() => alert("삭제하기!")}>삭제하기</Dropdown.Item>
+              <Dropdown.Item
+                onClick={() => {
+                  onDelete(data); // 삭제 기능 연결
+                  setOpenDropdown(false);
+                }}
+              >
+                삭제하기
+              </Dropdown.Item>
             </Dropdown.Menu>
           )}
         </Dropdown.Wrapper>

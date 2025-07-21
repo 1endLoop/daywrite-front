@@ -350,6 +350,19 @@ M.Album = styled.div`
 M.AlbumInfo = styled.div`
   ${justifyContentStart}
   gap: 8px;
+
+  h5 {
+    ${sharedStyle}
+    font-size: 16px;
+    font-weight: 600;
+    color: #282828;
+  }
+  h6 {
+    ${sharedStyle}
+    font-size: 14px;
+    font-weight: 500;
+    color: #787878;
+  }
 `
 
 M.AlbumImg = styled.img`
@@ -423,7 +436,7 @@ M.SelectedInfoBlock = styled.div`
   gap: 4px;
 `;
 
-M.SelectedTitle = styled.h5`
+M.SelectedTitle = styled.div`
   font-size: 14px;
   font-weight: 500;
   color: #787878;
