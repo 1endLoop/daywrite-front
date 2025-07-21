@@ -142,7 +142,6 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
   };
 
   // 북마크 핸들러 추가
-  // 북마크 핸들러
   const handleBookmark = async () => {
     if (!currentData || isBookmarked) return;
 
