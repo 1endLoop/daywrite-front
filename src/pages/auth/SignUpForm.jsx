@@ -181,6 +181,7 @@ const [showSuccessPopup, setShowSuccessPopup] = useState(false);  // 회원가�
               name: datas.name
             })
           })
+          
           .then((res) => res.json())
           .then((res) => {
             console.log(res);
