@@ -7,6 +7,7 @@ import MainPlaylistPopup from "../main/MainPlaylistPopup";
 import CategoryPopup from "./CategoryPopup";
 import MoodSelect from "./MoodSelect";
 import { fetchRecommendedMusic } from "../../api/musicApi";
+import Toast from "../../components/Toast";
 
 const TypingPage = () => {
   const [writingData, setWritingData] = useState(null);
@@ -22,6 +23,7 @@ const TypingPage = () => {
   const [selectedMood, setSelectedMood] = useState(null);
   const [showCategoryPopup, setShowCategoryPopup] = useState(false);
   const [fade, setFade] = useState(true);
+  const [toast, setToast] = useState(null);
 
   const navigate = useNavigate();
   const isLoggedIn = false;
@@ -113,7 +115,6 @@ const TypingPage = () => {
     }
 
     try {
-      // 히스토리 먼저 저장
       const historyData = {
         content: inputValue,
         book: writingData.book,
@@ -137,12 +138,9 @@ const TypingPage = () => {
       const historyJson = await historyRes.json();
       const historyId = historyJson.data?._id;
 
-      if (!historyRes.ok || !historyId) {
-        throw new Error("히스토리 저장 실패");
-      }
+      if (!historyRes.ok || !historyId) throw new Error("히스토리 저장 실패");
 
       if (isBookmarked) {
-        // 북마크 해제
         await fetch("http://localhost:8000/api/bookmarks", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
@@ -151,9 +149,8 @@ const TypingPage = () => {
 
         setIsBookmarked(false);
         setShowBookmark(false);
-        alert("북마크에서 삭제되었습니다!");
+        setToast("북마크에서 삭제되었습니다!");
       } else {
-        // 북마크 저장
         await fetch("http://localhost:8000/api/bookmarks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -166,8 +163,10 @@ const TypingPage = () => {
 
         setIsBookmarked(true);
         setShowBookmark(true);
-        alert("북마크에 저장되었습니다!");
+        setToast("북마크에 저장되었습니다!");
       }
+
+      setTimeout(() => setToast(null), 2000); // 2초 후 토스트 사라짐
     } catch (err) {
       console.error("북마크 처리 실패:", err);
       alert("에러 발생: " + err.message);
@@ -176,6 +175,7 @@ const TypingPage = () => {
 
   return (
     <div>
+      {toast && <Toast message={toast} />}
       {showPopup && (
         <MainPopup
           type={popupType}
