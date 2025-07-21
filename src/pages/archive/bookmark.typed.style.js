@@ -23,6 +23,16 @@ S.PageTitle = styled.h2`
   font-weight: bold;
 `;
 
+S.NewFodler = styled.h3`
+  font-size: 16px;
+  font-weight: normal;
+  margin-left: 20px;
+  cursor: pointer;
+  &:hover {
+    color: #F96F3D;
+  } 
+`
+
 S.CountText = styled.span`
   font-size: 14px;
   color: gray;

@@ -19,7 +19,8 @@ const HistoryCard = ({ data, onClick, onToggleBookmark, onToggleLike, isEditMode
   return (
     <Card.Card
       onClick={onClick}
-      selected={isEditMode && selected ? true : false} // or !!(isEditMode && selected)
+      // selected={isEditMode && selected ? true : false} // or !!(isEditMode && selected)
+      selected={selected}
       isEditMode={isEditMode}
     >
       <Card.Header>

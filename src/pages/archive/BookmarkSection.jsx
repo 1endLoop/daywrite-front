@@ -12,6 +12,7 @@ const BookmarkSection = ({ title, type }) => {
   const [showLeftBtn, setShowLeftBtn] = useState(false);
   const [showRightBtn, setShowRightBtn] = useState(true);
   const [bookmarkItems, setBookmarkItems] = useState([]);
+  const [newFolders, setNewFolders] = useState([]); // 폴더 생성
 
   // ✅ 드롭다운
   const [dropdownInfo, setDropdownInfo] = useState(null);
@@ -19,18 +20,18 @@ const BookmarkSection = ({ title, type }) => {
   useClickOutside(dropdownRef, () => setDropdownInfo(null));
 
   // ✅ 북마크 목록 가져오기
-  useEffect(() => {
-    const fetchBookmarks = async () => {
-      try {
-        const res = await fetch("http://localhost:8000/api/bookmarks?userId=user1");
-        const data = await res.json(); // [{ historyId, folderId, type, ... }]
-        setBookmarkItems(data);
-      } catch (err) {
-        console.error("북마크 목록 불러오기 실패:", err);
-      }
-    };
-    fetchBookmarks();
-  }, []);
+  // useEffect(() => {
+  //   const fetchBookmarks = async () => {
+  //     try {
+  //       const res = await fetch("http://localhost:8000/api/bookmarks?userId=user1");
+  //       const data = await res.json(); // [{ historyId, folderId, type, ... }]
+  //       setBookmarkItems(data);
+  //     } catch (err) {
+  //       console.error("북마크 목록 불러오기 실패:", err);
+  //     }
+  //   };
+  //   fetchBookmarks();
+  // }, []);
 
   // ✅ 폴더별 그룹화
   const groupedByFolder = {};
@@ -75,12 +76,15 @@ const BookmarkSection = ({ title, type }) => {
   ];
 
   // ✅ 필터 및 count 추가
-  const folderCards = folders
-    .filter((folder) => folder.type === type)
-    .map((folder) => ({
-      ...folder,
-      count: groupedByFolder[folder.id]?.length || 0,
-    }));
+  // const folderCards = folders
+  //   .filter((folder) => folder.type === type)
+  //   .map((folder) => ({
+  //     ...folder,
+  //     count: groupedByFolder[folder.id]?.length || 0,
+  //   }));
+
+  // 수정 (폴더 API가 count 포함해서 내려주므로 그냥 필터만)
+  const folderCards = newFolders.filter(folder => folder.type === type);
 
   // ✅ 드롭다운 위치
   const handleMoreClick = (e, item) => {
@@ -111,6 +115,21 @@ const BookmarkSection = ({ title, type }) => {
     return () => el.removeEventListener("scroll", handleScrollVisibility);
   }, []);
 
+  // 폴더추가
+  useEffect(() => {
+    const fetchFolders = async () => {
+      try {
+        const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/NewFolder/folders`);
+        if (!res.ok) throw new Error("폴더 목록 불러오기 실패");
+        const data = await res.json();
+        setNewFolders(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchFolders();
+  }, []);
+
   return (
     <S.Section>
       <S.TitleRow>
@@ -125,12 +144,25 @@ const BookmarkSection = ({ title, type }) => {
         {showLeftBtn && <S.ScrollLeftBtn onClick={() => scroll("left")}>{"<"}</S.ScrollLeftBtn>}
 
         <S.CardRow ref={scrollRef}>
-          {folderCards.map((item) => (
+          {/* {folderCards.map((item) => (
             <BookmarkCard
               key={item.id}
               {...item}
               onMoreClick={(e) => handleMoreClick(e, item)}
               onClick={() => navigate(`/archive/bookmark/${type === "글" ? "typed" : "played"}/${item.id}`)}
+            />
+          ))} */}
+          {folderCards.map((item) => (
+            <BookmarkCard
+              key={item.id}
+              title={item.title}
+              type={item.type}
+              count={item.count}
+              imageUrl={item.imageUrl || "/assets/images/default-book-img.png"}
+              onMoreClick={(e) => handleMoreClick(e, item)}
+              onClick={() =>
+                navigate(`/archive/bookmark/${type === "글" ? "typed" : "played"}/${item.id}`)
+              }
             />
           ))}
         </S.CardRow>
