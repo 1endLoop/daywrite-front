@@ -14,6 +14,7 @@ const TypingPage = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showLike, setShowLike] = useState(false);
   const [showBookmark, setShowBookmark] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [popupType, setPopupType] = useState("");
   const [showPlaylist, setShowPlaylist] = useState(false);
@@ -33,37 +34,54 @@ const TypingPage = () => {
   // 추천 음악 리스트
 
   const [musicList, setMusicList] = useState([]);
-  const [currentSong, setCurrentSong] = useState(null); 
- 
+  const [currentSong, setCurrentSong] = useState(null);
+
   // 글 데이터 가져오기 함수
-const fetchWriting = async () => {
-  try {
-    console.log("요청 중:", selectedKeywords, selectedGenres);
+  const fetchWriting = async () => {
+    try {
+      console.log("요청 중:", selectedKeywords, selectedGenres);
 
-    const res = await axios.post("/api/writing/random", {
-      keywords: selectedKeywords,
-      genres: selectedGenres,
-    });
+      const res = await axios.post("/api/writing/random", {
+        keywords: selectedKeywords,
+        genres: selectedGenres,
+      });
 
-    console.log("응답데이터:", res.data);
+      console.log("응답데이터:", res.data);
 
-    if (!res?.data) {
-      alert("조건에 맞는 글이 없습니다.");
-      return;
-    }
+      if (!res?.data) {
+        alert("조건에 맞는 글이 없습니다.");
+        return;
+      }
 
-    setWritingData(res.data);
+      setWritingData(res.data);
 
     // 음악 API도 같은 함수 내에서 호출
     const music = await fetchRecommendedMusic(selectedKeywords, selectedGenres);
-    const parsed = music.map((track) => ({
-      img: track.image?.[2]?.["#text"] || "/assets/images/album_cover/default.jpg", // 기본 이미지 fallback
-      title: track.name,
-      artist: track.artist,
-      liked: false,
-    }));
+    // const parsed = music.map((track) => ({
+    //   img: track.image?.[2]?.["#text"] || "/assets/images/album_cover/default.jpg", // 기본 이미지 fallback
+    //   title: track.name,
+    //   artist: track.artist,
+    //   liked: false,
+    // }));
+
+    const DEFAULT_LASTFM_IMAGE ="https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png";
+
+    const parsed = music.map((track) => {
+      const img = track.image?.[3]?.['#text']
+      const isDefault = img === DEFAULT_LASTFM_IMAGE
+
+      return {
+        img: isDefault ? "C:\daywrite-front\public\assets\images\album_cover\smiley.ori.jpg" : img,
+        title: track.name,
+        artist: track.artist,
+        liked: false,
+      }
+    })
+
+
     setMusicList(parsed);
     setCurrentSong(parsed[0]); // 첫 곡을 현재 곡으로 설정
+    console.log("추천음악:", music)
 
   } catch (error) {
     console.error("글 불러오기 실패:", error);
@@ -106,6 +124,75 @@ const fetchWriting = async () => {
     setShowPopup(true);
   };
 
+  // 북마크
+  const handleBookmarkToggle = async () => {
+    if (!writingData || inputValue.trim() === "") {
+      alert("먼저 필사를 완료해주세요!");
+      return;
+    }
+
+    try {
+      // 히스토리 먼저 저장
+      const historyData = {
+        content: inputValue,
+        book: writingData.book,
+        author: writingData.author,
+        publisher: writingData.publisher ?? "unknown",
+        publishedDate: writingData.publishedDate ?? "unknown",
+        bookCover: writingData.bookCover ?? "",
+        keyword: selectedKeywords,
+        genre: selectedGenres[0] ?? "",
+        music: currentSong?.title ?? "",
+        artist: currentSong?.artist ?? "",
+        mood: selectedMood ?? "",
+      };
+
+      const historyRes = await fetch("http://localhost:8000/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(historyData),
+      });
+
+      const historyJson = await historyRes.json();
+      const historyId = historyJson.data?._id;
+
+      if (!historyRes.ok || !historyId) {
+        throw new Error("히스토리 저장 실패");
+      }
+
+      if (isBookmarked) {
+        // 북마크 해제
+        await fetch("http://localhost:8000/api/bookmarks", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: "user1", historyId }),
+        });
+
+        setIsBookmarked(false);
+        setShowBookmark(false);
+        alert("북마크에서 삭제되었습니다!");
+      } else {
+        // 북마크 저장
+        await fetch("http://localhost:8000/api/bookmarks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: "user1",
+            historyId,
+            folderId: 1,
+          }),
+        });
+
+        setIsBookmarked(true);
+        setShowBookmark(true);
+        alert("북마크에 저장되었습니다!");
+      }
+    } catch (err) {
+      console.error("북마크 처리 실패:", err);
+      alert("에러 발생: " + err.message);
+    }
+  };
+
   return (
     <div>
       {showPopup && (
@@ -119,21 +206,19 @@ const fetchWriting = async () => {
         />
       )}
 
-      {showPlaylist && (
-        <MainPlaylistPopup onClose={() => setShowPlaylist(false)} data={musicList} />
-      )}
+      {showPlaylist && <MainPlaylistPopup onClose={() => setShowPlaylist(false)} data={musicList} />}
 
       <M.OuterWrap>
         <M.Container>
           <M.Content01>
             <M.TopHeader>
-              <M.IconButton onClick={() => setShowBookmark(!showBookmark)}>
+              <M.IconButton onClick={handleBookmarkToggle}>
                 <img
                   src={
                     process.env.PUBLIC_URL +
-                    (showBookmark
-                      ? "/assets/images/icons/bookmark-on-color.png"
-                      : "/assets/images/icons/bookmark-off-color.png")
+                    (isBookmarked
+                      ? "/assets/images/icons/svg/bookmark=on.svg"
+                      : "/assets/images/icons/svg/bookmark=off.svg")
                   }
                   alt="bookmark"
                 />
@@ -148,13 +233,13 @@ const fetchWriting = async () => {
 
               <M.TitleIconWrap>
                 <M.IcBtn onClick={handleSettingClick}>
-                  <img src="/assets/images/icons/settings.png" alt="설정" />
+                  <img src="/assets/images/icons/svg/settings.svg" alt="설정" />
                 </M.IcBtn>
                 <M.IcBtn>
-                  <img src="/assets/images/icons/link2.png" alt="링크 복사" />
+                  <img src="/assets/images/icons/svg/ic/link.svg" alt="링크 복사" />
                 </M.IcBtn>
                 <M.IcBtn onClick={() => setInputValue("")}>
-                  <img src="/assets/images/icons/eraser.png" alt="필사글 전체 지우기" />
+                  <img src="/assets/images/icons/svg/eraser.svg" alt="필사글 전체 지우기" />
                 </M.IcBtn>
               </M.TitleIconWrap>
             </M.TopHeader>
@@ -216,9 +301,7 @@ const fetchWriting = async () => {
                     <img
                       src={
                         process.env.PUBLIC_URL +
-                        (showLike
-                          ? "/assets/images/icons/like-on-color.png"
-                          : "/assets/images/icons/like-off-color.png")
+                        (showLike ? "/assets/images/icons/svg/like=on.svg" : "/assets/images/icons/svg/like=off.svg")
                       }
                       alt="like"
                     />
@@ -227,8 +310,8 @@ const fetchWriting = async () => {
                   <M.Album>
                     <M.AlbumImg src={currentSong.img} />
                     <M.AlbumInfo>
-                      <h5 style={{ color: "#282828" }}>{currentSong.title}</h5>
-                      <h6 style={{ color: "#787878" }}>{currentSong.artist}</h6>
+                      <h5>{currentSong.title}</h5>
+                      <h6>{currentSong.artist}</h6>
                     </M.AlbumInfo>
                   </M.Album>
 
@@ -237,22 +320,26 @@ const fetchWriting = async () => {
                 <M.PlayListIconWrap>
                   <M.PlayIconWrap>
                     <M.PlayIcon>
-                      <img src="/assets/images/icons/skip_previous.png" alt="이전" />
+                      <img src="/assets/images/icons/svg/music_prev.svg" alt="이전" />
                     </M.PlayIcon>
                     <M.PlayIcon onClick={handlePlayToggle}>
                       <img
-                        src={isPlaying ? "/assets/images/icons/music-pause.png" : "/assets/images/icons/music-play.png"}
+                        src={
+                          isPlaying
+                            ? "/assets/images/icons/svg/music_stop.svg"
+                            : "/assets/images/icons/svg/music_play.svg"
+                        }
                         alt={isPlaying ? "일시정지" : "재생"}
                       />
                     </M.PlayIcon>
                     <M.PlayIcon>
-                      <img src="/assets/images/icons/skip_next.png" alt="다음" />
+                      <img src="/assets/images/icons/svg/music_next.svg" alt="다음" />
                     </M.PlayIcon>
                   </M.PlayIconWrap>
                   <M.PlayListWrap onClick={() => setShowPlaylist(!showPlaylist)}>
                     <h4>PLAY LIST</h4>
                     <M.IcBtn>
-                      <img src="/assets/images/icons/list.png" alt="플레이리스트" />
+                      <img src="/assets/images/icons/svg/list.svg" alt="플레이리스트" />
                     </M.IcBtn>
                   </M.PlayListWrap>
                 </M.PlayListIconWrap>
@@ -262,7 +349,7 @@ const fetchWriting = async () => {
               <M.StyledUnder02>
                 <M.CategoryInfoWrap>
                   <M.ReplayBtn onClick={fetchWriting}>
-                    <img src="/assets/images/icons/replay.png" alt="새로고침" />
+                    <img src="/assets/images/icons/svg/replay.svg" alt="새로고침" />
                   </M.ReplayBtn>
                   <M.SelectedInfoBlock>
                     <M.SelectedTitle>

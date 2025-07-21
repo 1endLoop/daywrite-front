@@ -97,6 +97,26 @@ const HistoryList = () => {
     }
   };
 
+  // 삭제 함수
+  // ✅ 삭제 함수 내부로 이동
+  const deleteHistory = async (item) => {
+    try {
+      await fetch(`http://localhost:8000/api/history/${item._id}`, {
+        method: "DELETE",
+      });
+
+      setHistoryList((prev) => prev.filter((el) => el._id !== item._id));
+      setToast("삭제되었습니다!");
+      setTimeout(() => setToast(null), 2000);
+
+      if (selectedCard && selectedCard._id === item._id) {
+        setSelectedCard(null);
+      }
+    } catch (err) {
+      console.error("삭제 실패:", err);
+    }
+  };
+
   return (
     <Container>
       {toast && <Toast message={toast} />}
@@ -115,6 +135,7 @@ const HistoryList = () => {
             onClick={() => setSelectedCard(item)}
             onToggleBookmark={() => toggleBookmark(item)}
             onToggleLike={() => toggleMusicLike(item)}
+            onDelete={() => deleteHistory(item)} // 🔥 추가
             selected={false}
             isEditMode={false}
           />
