@@ -164,6 +164,30 @@ const BookmarkTyped = () => {
     }
   };
 
+  // 삭제
+  const handleDeleteSingle = async (item) => {
+    try {
+      await fetch("http://localhost:8000/api/bookmarks", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: "user1", historyId: item._id }),
+      });
+
+      setBookmarkItems((prev) => prev.filter((b) => b._id !== item._id));
+      setToast("북마크에서 삭제되었습니다!");
+      setTimeout(() => setToast(null), 2000);
+
+      // 선택된 카드 닫기
+      if (selectedCard && selectedCard._id === item._id) {
+        setSelectedCard(null);
+      }
+    } catch (err) {
+      console.error("북마크 삭제 실패:", err);
+      setToast("삭제 중 오류 발생");
+      setTimeout(() => setToast(null), 2000);
+    }
+  };
+
   return (
     <>
       {toast && <Toast message={toast} />}
@@ -220,8 +244,9 @@ const BookmarkTyped = () => {
               onToggleBookmark={() => handleBookmark(item)}
               onToggleLike={() => toggleLike(item)}
               onClick={() => handleCardClick(item)}
+              onDelete={() => handleDeleteSingle(item)} // 🔥 추가
               isEditMode={isEditMode}
-              selected={selectedIds.includes(item._id)} //
+              selected={selectedIds.includes(item._id)}
             />
           ))}
         </S.CardColumn>
