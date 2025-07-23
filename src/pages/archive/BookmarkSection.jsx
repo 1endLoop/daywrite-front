@@ -12,6 +12,7 @@ const BookmarkSection = ({ title, type }) => {
   const [showLeftBtn, setShowLeftBtn] = useState(false);
   const [showRightBtn, setShowRightBtn] = useState(true);
   const [bookmarkItems, setBookmarkItems] = useState([]);
+  const [folders, setFolders] = useState([]);
 
   // ✅ 드롭다운
   const [dropdownInfo, setDropdownInfo] = useState(null);
@@ -40,47 +41,68 @@ const BookmarkSection = ({ title, type }) => {
     groupedByFolder[folderId].push(item);
   });
 
-  // ✅ 폴더 메타 정보 (앞으로 DB화 예정)
-  const folders = [
-    {
-      id: 1,
-      title: "북마크한 모든 글",
-      type: "글",
-      imageUrl: "/assets/images/book-img.jpeg",
-    },
-    {
-      id: 2,
-      title: "쇼펜하우어 명언집",
-      type: "글",
-      imageUrl: "/assets/images/book-img.jpeg",
-    },
-    {
-      id: 3,
-      title: "니체 명언집",
-      type: "글",
-      imageUrl: "/assets/images/book-img.jpeg",
-    },
-    {
-      id: 8,
-      title: "사랑에 빠졌을 때",
-      type: "곡",
-      imageUrl: "/assets/images/album-image.png",
-    },
-    {
-      id: 9,
-      title: "포근한",
-      type: "곡",
-      imageUrl: "/assets/images/profiles/cat.JPG",
-    },
-  ];
+  // // ✅ 폴더 메타 정보 (앞으로 DB화 예정)
+  // const folders = [
+  //   {
+  //     id: 1,
+  //     title: "북마크한 모든 글",
+  //     type: "글",
+  //     imageUrl: "/assets/images/book-img.jpeg",
+  //   },
+  //   {
+  //     id: 2,
+  //     title: "쇼펜하우어 명언집",
+  //     type: "글",
+  //     imageUrl: "/assets/images/book-img.jpeg",
+  //   },
+  //   {
+  //     id: 3,
+  //     title: "니체 명언집",
+  //     type: "글",
+  //     imageUrl: "/assets/images/book-img.jpeg",
+  //   },
+  //   {
+  //     id: 8,
+  //     title: "사랑에 빠졌을 때",
+  //     type: "곡",
+  //     imageUrl: "/assets/images/album-image.png",
+  //   },
+  //   {
+  //     id: 9,
+  //     title: "포근한",
+  //     type: "곡",
+  //     imageUrl: "/assets/images/profiles/cat.JPG",
+  //   },
+  // ];
 
   // ✅ 필터 및 count 추가
+  // const folderCards = folders
+  //   .filter((folder) => folder.type === type)
+  //   .map((folder) => ({
+  //     ...folder,
+  //     count: groupedByFolder[folder.id]?.length || 0,
+  //   }));
+
+  // const folderCards = folders
+  //   .filter((folder) => folder.type === type)
+  //   .map((folder) => ({
+  //     ...folder,
+  //     imageUrl: folder.thumbnailUrl?.startsWith('http') 
+  //       ? folder.thumbnailUrl // 만약 풀 URL이면 그대로
+  //       : `${process.env.REACT_APP_BACKEND_URL}/uploads/${folder.thumbnailUrl}`, // 파일명만 있을 경우
+        
+  //   }));
+
   const folderCards = folders
     .filter((folder) => folder.type === type)
     .map((folder) => ({
       ...folder,
-      count: groupedByFolder[folder.id]?.length || 0,
+      imageUrl: folder.thumbnailUrl
+        ? `${process.env.REACT_APP_BACKEND_URL}/uploads/${folder.thumbnailUrl}`
+        : "/assets/images/book-img.jpeg", // 기본 이미지
     }));
+
+
 
   // ✅ 드롭다운 위치
   const handleMoreClick = (e, item) => {
@@ -111,6 +133,22 @@ const BookmarkSection = ({ title, type }) => {
     return () => el.removeEventListener("scroll", handleScrollVisibility);
   }, []);
 
+  // newFolder 저장한 값 보여주기
+  useEffect(() => {
+    const fetchFolders = async () => {
+      try {
+        const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/bookmarks/folders`);
+        const data = await res.json();
+        console.log("✅ folders API 응답:", data);
+        setFolders(data);
+      } catch (err) {
+        console.error("폴더 목록 불러오기 실패:", err);
+      }
+    };
+
+    fetchFolders();
+  }, []);
+
   return (
     <S.Section>
       <S.TitleRow>
@@ -126,9 +164,19 @@ const BookmarkSection = ({ title, type }) => {
 
         <S.CardRow ref={scrollRef}>
           {folderCards.map((item) => (
+            // <BookmarkCard
+            //   key={item.id}
+            //   {...item}
+            //   onMoreClick={(e) => handleMoreClick(e, item)}
+            //   onClick={() => navigate(`/archive/bookmark/${type === "글" ? "typed" : "played"}/${item.id}`)}
+            // />
             <BookmarkCard
               key={item.id}
-              {...item}
+              title={item.title}
+              type={item.type}
+              // imageUrl={`${process.env.REACT_APP_BACKEND_URL}/uploads/${item.thumbnailUrl}`} // 여기 중요!
+              imageUrl={item.imageUrl}
+              count={item.count}
               onMoreClick={(e) => handleMoreClick(e, item)}
               onClick={() => navigate(`/archive/bookmark/${type === "글" ? "typed" : "played"}/${item.id}`)}
             />

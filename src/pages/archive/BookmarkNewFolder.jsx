@@ -129,7 +129,8 @@ const BookmarkNewFolder = () => {
         body: formData,
         });
 
-        const { url: thumbnailUrl } = await thumbRes.json(); // 썸네일 이미지 저장 후 URL 받기
+        const data = await thumbRes.json(); // ✅ 한 번만 호출
+        const { url: thumbnailUrl, filename, imageId } = data;
 
         // 폴더 생성 요청
         const folderRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/bookmarks/folder`, {
@@ -140,6 +141,7 @@ const BookmarkNewFolder = () => {
             type: "글", // 혹은 "곡"
             historyIds: selectedCards.map(card => card._id),
             thumbnailUrl,
+            imageUpload: imageId,
         }),
         });
 
