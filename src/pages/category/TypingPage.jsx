@@ -19,7 +19,7 @@ const TypingPage = () => {
   const [popupType, setPopupType] = useState("");
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [showMoodPopup, setShowMoodPopup] = useState(false);
-  const [selectedMood, setSelectedMood] = useState(null);
+  const [selectedMood, setSelectedMood] = useState("#FFFFFF");
   const [showCategoryPopup, setShowCategoryPopup] = useState(false);
   const [fade, setFade] = useState(true);
 
@@ -144,7 +144,7 @@ const TypingPage = () => {
         genre: selectedGenres[0] ?? "",
         music: currentSong?.title ?? "",
         artist: currentSong?.artist ?? "",
-        mood: selectedMood ?? "",
+        mood: selectedMood,
       };
 
       const historyRes = await fetch("http://localhost:8000/api/history", {
@@ -387,7 +387,7 @@ const TypingPage = () => {
                         genre: selectedGenres[0] ?? "",
                         music: currentSong.title,
                         artist: currentSong.artist,
-                        mood: mood, // 선택된 기분
+                        mood: mood.color // 선택된 기분
                       };
 
                       try {
