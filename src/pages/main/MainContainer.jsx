@@ -200,8 +200,8 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
       setToast("북마크에 저장되었습니다!");
       setTimeout(() => setToast(null), 2000);
 
-      // 4. 북마크 폴더로 이동
-      navigate("/archive/bookmark/typed/1");
+      // 페이지 이동 제거 ✅
+      // navigate("/archive/bookmark/typed/1");
     } catch (err) {
       console.error("북마크 저장 에러:", err);
       alert("에러: " + err.message);
