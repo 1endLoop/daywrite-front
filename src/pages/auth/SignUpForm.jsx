@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import S from './signup.form.style';
 import BasicButton from '../../components/button/BasicButton'
 import { filledButtonCSS } from '../../components/button/style';
 import { Link, useNavigate } from 'react-router-dom';
-import SignUpPopup from './SignUpPopup';
+import AuthPopup from './AuthPopup';
 
 const SignUpForm = () => {
   const {
@@ -12,13 +12,11 @@ const SignUpForm = () => {
     formState: {isSubmitting, isSubmitted, errors }
   } = useForm({ mode: "onSubmit" })
 
-  const watchedValues = watch(['email', 'nickname', 'password', 'passwordConfirm']);
+  const watchedValues = watch(['name', 'email', 'nickname', 'password', 'passwordConfirm']);
   
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[!@#])[\da-zA-Z!@#]{8,}$/;
-  
-  // const onSubmit = async (data) => { console.log(data); };
-  
+    
   const [showPassword, setShowPassword] = useState(false);  // 비밀번호
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);  // 비밀번호 확인
 
@@ -29,8 +27,6 @@ const SignUpForm = () => {
   const [authFailed, setAuthFailed] = useState(false);
 
   const [alertMessage, setAlertMessage] = useState('');
-  const [authSuccess, setAuthSuccess] = useState(false);  // 인증번호 인증성공
-  const [authFail, setAuthFail] = useState(false);  // 인증번호 인증실패
   const [nicknameChecked, setNicknameChecked] = useState(false);  // 닉네임 중복 확인
   const [agreedAll, setAgreedAll] = useState(false);
 
@@ -40,6 +36,69 @@ const SignUpForm = () => {
     marketing: false,
   });
 
+  // 휴대폰 인증 관련 상태
+  const [phone, setPhone] = useState('');
+  const [phoneCode, setPhoneCode] = useState('');
+  const [sentPhoneCode, setSentPhoneCode] = useState('');
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [phoneAuthSent, setPhoneAuthSent] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0); // 남은 시간 (초 단위)
+  const [timerRunning, setTimerRunning] = useState(false);
+
+  const handleSendPhoneCode = () => {
+    const phone = getValues("phonenum"); // 1. 폼에서 번호 가져옴
+    if (!phone) {
+      alert("휴대폰 번호를 입력해주세요."); // 2. 입력 안 돼있으면 경고
+      return; // 3. 함수 멈춤
+    }
+    // 4. 인증번호 전송 로직 계속 실행
+    const newCode = '12345';
+    setSentPhoneCode(newCode);
+    setPhoneAuthSent(true);
+    setPhoneVerified(false);
+    setPhoneCode('');
+    setTimeLeft(180);           // 3분 설정
+    setTimerRunning(true);      // 타이머 시작
+    alert("인증번호가 발송되었습니다. 문자메시지를 확인해주세요!");
+  };
+
+  const handleVerifyPhoneCode = () => {
+    if (phoneCode === sentPhoneCode) {
+      setPhoneVerified(true);
+      setTimerRunning(false);  // 타이머정지
+      alert("휴대폰 인증이 완료되었습니다!");
+    } else {
+      alert("인증번호가 일치하지 않습니다.");
+      setPhoneVerified(false);
+      setPhoneCode('');
+    }
+  };
+
+  useEffect(() => {
+  if (!timerRunning) return;
+
+  const timer = setInterval(() => {
+    setTimeLeft((prev) => {
+      if (prev <= 1) {
+        clearInterval(timer);
+        setTimerRunning(false);
+        // 인증이 완료되지 않은 경우만 처리
+        if (!phoneVerified) {
+          alert("인증 시간이 만료되었습니다. 인증번호를 다시 요청해주세요.");
+          setPhone('');
+          setPhoneCode('');
+          setPhoneAuthSent(false);
+        }
+        return 0;
+      }
+      return prev - 1;
+    });
+  }, 1000);
+
+  return () => clearInterval(timer); // 언마운트 시 타이머 정리
+}, [timerRunning, phoneVerified]);
+
+
   // 알럿설정
   const showAlert = (message) => {
     setAlertMessage(message);
@@ -47,7 +106,7 @@ const SignUpForm = () => {
   };
 
   const handleSendAuthCode = () => {
-    const newCode = '123456';
+    const newCode = '12345';
     setGeneratedCode(newCode);
     setAuthSent(true);
     setAuthVerified(false);
@@ -109,14 +168,17 @@ const SignUpForm = () => {
 
 // 필수영역 입력 설정
 const isFormValid =
-  watchedValues[0] &&  // email
+  watchedValues[0] &&  // name
+  watchedValues[1] &&  // email
   authVerified &&
-  watchedValues[1] &&  // nickname
+  watchedValues[2] &&  // nickname
   nicknameChecked &&
-  watchedValues[2] &&  // password
-  watchedValues[3] &&  // passwordConfirm
+  watchedValues[3] &&  // password
+  watchedValues[4] &&  // passwordConfirm
   agreements.terms &&
-  agreements.privacy;
+  agreements.privacy &&
+  phoneVerified; // 휴대폰 인증
+
 
 
 // 팝업설정
@@ -124,17 +186,18 @@ const [showTermsPopup, setShowTermsPopup] = useState(false);  // 약관
 const [showSuccessPopup, setShowSuccessPopup] = useState(false);  // 회원가입 성공
 
 // 회원가입 성공 시 로그인 화면 이동
-  const navigate = useNavigate()
+const navigate = useNavigate()
 
   return (
     <S.LoginContainer>
     {/* ✅ 약관 동의용 팝업 */}
     {showTermsPopup && (
-      <SignUpPopup
+      <AuthPopup
         title="이용약관 동의"
         content="사법권은 법관으로 구성된 법원에 속한다. 국가는 과학기술의 혁신과 정보 및 인력의 개발을 통하여 국민경제의 발전에 노력하여야 한다. 모든 국민은 근로의 권리를 가진다. 국가는 사회적·경제적 방법으로 근로자의 고용의 증진과 적정임금의 보장에 노력하여야 하며, 법률이 정하는 바에 의하여 최저임금제를 시행하여야 한다.
           위원은 정당에 가입하거나 정치에 관여할 수 없다. 대통령은 국가의 원수이며, 외국에 대하여 국가를 대표한다. 누구든지 체포 또는 구속을 당한 때에는 즉시 변호인의 조력을 받을 권리를 가진다. 다만, 형사피고인이 스스로 변호인을 구할 수 없을 때에는 법률이 정하는 바에 의하여 국가가 변호인을 붙인다.
           정당의 설립은 자유이며, 복수정당제는 보장된다. 모든 국민은 신체의 자유를 가진다. 누구든지 법률에 의하지 아니하고는 체포·구속·압수·수색 또는 심문을 받지 아니하며, 법률과 적법한 절차에 의하지 아니하고는 처벌·보안처분 또는 강제노역을 받지 아니한다. 국가는 대외무역을 육성하며, 이를 규제·조정할 수 있다."
+        rightbtn="확인"
         onClose={() => setShowTermsPopup(false)}
         onConfirm={() => setShowTermsPopup(false)}
         showCancel={false}
@@ -143,9 +206,11 @@ const [showSuccessPopup, setShowSuccessPopup] = useState(false);  // 회원가�
 
     {/* ✅ 회원가입 성공 팝업 */}
     {showSuccessPopup && (
-      <SignUpPopup
+      <AuthPopup
         title="회원가입 하시겠습니까?"
         content="Welcome to daywrite!"
+        leftbtn="취소"
+        rightbtn="확인"
         onConfirm={() => {
           localStorage.clear();
           setShowSuccessPopup(false);
@@ -169,16 +234,17 @@ const [showSuccessPopup, setShowSuccessPopup] = useState(false);  // 회원가�
       <S.LoginRightBox>
         <S.Form onSubmit={handleSubmit( async (datas) => {
           // submit이 클릭되었을 때 가로채어 데이터들을 처리한다.
-          await fetch(`${process.env.REACT_APP_BACKEND_URL}/users/api/register`, {
+          await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/users/register`, {
             method : "POST",
             headers : {
               "Content-Type" : "application/json"
             },
             body : JSON.stringify({ // JSON.stringify 자바스크립트의 값을 문자열로 변환
+              name: datas.name,
+              phonenum: datas.phonenum,
               email: datas.email,
               password: datas.password,
               nickname : datas.nickname,
-              name: datas.name
             })
           })
           
@@ -212,41 +278,81 @@ const [showSuccessPopup, setShowSuccessPopup] = useState(false);  // 회원가�
               <S.Label>
                 <S.InsideLabel>
                   <S.LabelText>이름</S.LabelText>
-                  <S.Input type="text" placeholder="이름을 입력해주세요." />
-                  {isSubmitted && errors?.email?.type === "pattern" && (
-                    <S.ConfirmMessage>올바른 이메일 형식이 아닙니다.</S.ConfirmMessage>
-                  )}
+                  <S.Input
+                    type="text"
+                    placeholder="이름을 입력해주세요."
+                    {...register("name", { required: true })}
+                    hasError={!!errors.name}
+                    isEmpty={getValues("name") === ""}
+                  />
                 </S.InsideLabel>
+
+                <S.InsideLabel>
+                  <S.LabelText>휴대폰 번호</S.LabelText>
+                  <S.InputWithBtn>
+                    <S.Input
+                      type="text"
+                      placeholder="숫자만 입력해주세요. (ex. 01012345678)"
+                      {...register('phonenum', { required: true })}
+                      hasError={!!errors.phonenum}
+                      isEmpty={getValues("phonenum") === ""}
+                      disabled={phoneVerified}
+                      verified={phoneVerified}
+                    />
+                    {!phoneAuthSent ? (
+                      <S.SmallButton type="button" onClick={handleSendPhoneCode}>
+                        <S.SmallButtonText>인증번호<br />전송</S.SmallButtonText>
+                      </S.SmallButton>
+                    ) : !phoneVerified ? (
+                      <S.SmallButton type="button" onClick={handleVerifyPhoneCode}>
+                        <S.SmallButtonText>인증번호<br />확인</S.SmallButtonText>
+                      </S.SmallButton>
+                    ) : (
+                      <S.SmallButton type="button" disabled>
+                        <S.SmallButtonText>인증 완료</S.SmallButtonText>
+                      </S.SmallButton>
+                    )}
+                  </S.InputWithBtn>
+                </S.InsideLabel>
+                {phoneAuthSent && !phoneVerified && (
+                  <S.InsideLabel>
+                    <S.LabelText>
+                      인증번호 입력
+                      {timerRunning && (
+                        <span style={{ marginLeft: '10px', color: '#EB5757', fontSize: '14px' }}>
+                          {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+                        </span>
+                      )}
+                    </S.LabelText>
+                    <S.Input
+                      type="text"
+                      placeholder="인증번호를 입력해주세요"
+                      value={phoneCode}
+                      onChange={(e) => setPhoneCode(e.target.value)}
+                    />
+                  </S.InsideLabel>
+                )}
               </S.Label>
 
               <S.Label>
                 <S.InsideLabel>
                   <S.LabelText>이메일</S.LabelText>
-                  <S.Input 
-                    type="text" placeholder="이메일을 입력해주세요." 
-                    {...register("email", {
-                      required : true,
-                      pattern : { value : emailRegex }
-                    })}
-                    hasError={!!errors.email}
-                    isEmpty={getValues("email") === ""}
-                  />
-                  {isSubmitted && errors?.email?.type === "pattern" && (
-                    <S.ConfirmMessage>올바른 이메일 형식이 아닙니다.</S.ConfirmMessage>
-                  )}
-                </S.InsideLabel>
-
-                <S.InsideLabel>
-                  <S.LabelText>인증번호</S.LabelText>
                   <S.InputWithBtn>
                     <S.Input 
-                      type="text"
-                      placeholder="인증번호를 입력해주세요."
-                      value={authCode}
-                      onChange={(e) => setAuthCode(e.target.value)}
-                      disabled={!authSent || authVerified}
+                      type="text" 
+                      placeholder="이메일을 입력해주세요." 
+                      {...register("email", {
+                        required : true,
+                        pattern : { value : emailRegex }
+                      })}
+                      hasError={!!errors.email}
+                      isEmpty={getValues("email") === ""}
+                      disabled={authVerified}
                       verified={authVerified}
                     />
+                    {isSubmitted && errors?.email?.type === "pattern" && (
+                      <S.ConfirmMessage>올바른 이메일 형식이 아닙니다.</S.ConfirmMessage>
+                    )}
                     {!authSent ? (
                       <S.SmallButton type="button" onClick={handleSendAuthCode}>
                         <S.SmallButtonText>인증번호<br />전송</S.SmallButtonText>
@@ -257,11 +363,23 @@ const [showSuccessPopup, setShowSuccessPopup] = useState(false);  // 회원가�
                       </S.SmallButton>
                     ) : (
                       <S.SmallButton type="button" disabled>
-                        <S.SmallButtonText>인증번호<br />확인</S.SmallButtonText>
+                        <S.SmallButtonText>인증 완료</S.SmallButtonText>
                       </S.SmallButton>
                     )}
                   </S.InputWithBtn>
                 </S.InsideLabel>
+
+                {authSent && !authVerified && (
+                <S.InsideLabel>
+                  <S.LabelText>인증번호 입력</S.LabelText>
+                  <S.Input
+                    type="text"
+                    placeholder="인증번호를 입력해주세요"
+                    value={authCode}
+                    onChange={(e) => setAuthCode(e.target.value)}
+                  />
+                </S.InsideLabel>
+              )}
               </S.Label>
 
 

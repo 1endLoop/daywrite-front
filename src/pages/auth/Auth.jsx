@@ -1,13 +1,19 @@
-import React, { useEffect, useState } from "react";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import React from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import S from "./style";
-import { useBackground } from "../../contexts/BackgroundContext";
-import axios from "axios";
+import LoginForm from "./LoginForm";
+import SignUpForm from './SignUpForm';
 import { useDispatch, useSelector } from "react-redux";
 import { setUser, setUserStatus } from "../../modules/user/user";
+import Search from "./Search";
 
-const Layout = () => {
-  const { backgroundImage } = useBackground();
+
+const Auth = () => {
+  const { pathname } = useLocation();
+  const isLoginPage = pathname === "/login";
+  const isSignUpPage = pathname === "/signup";
+  const isSearchPage = pathname.startsWith("/search");
+
   const isLogin = useSelector((state) => state.user.isLogin); // 로그인 여부
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -21,7 +27,7 @@ const Layout = () => {
 
   return (
     <S.Container>
-      <S.Background style={{ backgroundImage: `url(${backgroundImage})` }} />
+      <S.Background />
 
       <S.Header>
         <S.HeaderContent>
@@ -35,6 +41,7 @@ const Layout = () => {
             <Link to="/community">community</Link>
             <Link to="/mypage">my page</Link>
           </S.Nav>
+          
           <S.Login>
             {isLogin ? (
               <button onClick={handleLogout} style={{all: 'unset', cursor: 'pointer'}}>
@@ -44,15 +51,16 @@ const Layout = () => {
               <Link to="/login">login</Link>
             )}
           </S.Login>
+
         </S.HeaderContent>
       </S.Header>
-
-      <S.Wrapper>
-        <Outlet />
-      </S.Wrapper>
+      <S.ContentWrapper>
+        {isLoginPage && <LoginForm />}
+        {isSignUpPage && <SignUpForm />}
+        {isSearchPage && <Search />}
+      </S.ContentWrapper>
     </S.Container>
   );
 };
 
-export default Layout;
-
+export default Auth;
