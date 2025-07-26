@@ -23,6 +23,7 @@ S.Modal = styled.div`
   border-radius: 12px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
   position: relative;
+  overflow:scroll;
 `;
 
 S.Header = styled.div`
@@ -61,6 +62,8 @@ S.Divider = styled.hr`
 `;
 
 S.SourceBox = styled.div`
+  display:flex;
+  justify-content:space-between;
   font-size: 14px;
   margin-bottom: 20px;
 
@@ -105,7 +108,7 @@ S.Content = styled.p`
   color: #222;
   margin-bottom: 24px;
   white-space: pre-wrap;
-  text-align: justify;
+  text-align: justify;  
 `;
 
 S.MusicSection = styled.div`

@@ -11,29 +11,54 @@ const CalendarList = () => {
   const [selectedDate, setSelectedDate] = useState(null);
 
 
+  // useEffect(() => {
+  //   const dummyData = [
+  //     { date: '2025-06-30', title: 'aaaa',author: 'dd is good', color: '#D8FFE3' },
+  //     { date: '2025-06-30', title: 'travcommoeefsfefaefnadlikeiyoudel',author: 'lucy is good', color: '#D8FFE3' },
+  //     { date: '2025-06-01', title: 'friends is aefeafefaefaefgood godd gdodo',author: 'happy day', color: '#FFDEE3' },
+  //     { date: '2025-06-04', title: 'mylife haha', author: 'goodluct',color: '#FFF3C7' },
+  //     { date: '2025-06-13', title: 'today mtoydkaynood is ood',author: 'applecomapny', color: '#FFF9C4' },
+  //     { date: '2025-06-22', title: 'LUY ',author: 'drawio', color: '#D8FFE3' },
+  //     { date: '2025-06-11', title: 'hate yourseaefaeflf', author: 'phone',color: '#FFDCFA' },
+  //     { date: '2025-06-11', title: 'Love youaeaefefaefrself', author: 'phone',color: '#FFDCFA' },
+  //     { date: '2025-06-11', title: 'Love youaaefaeefefefaefrself', author: 'phone',color: '#FFDCFA' },
+  //     { date: '2025-06-11', title: 'Love yoaefafeaefeurself', author: 'phone',color: '#FFDCFA' },
+  //     { date: '2025-06-11', title: 'Love yourself', author: 'phone',color: '#FFDCFA' },
+  //   ];
+
+  //   const data = {};
+  //   dummyData.forEach(({date, title, author, color}) => {
+  //     data[date] =data[date] || [];
+  //     data[date].push({ title: title, author: author ,color: color });
+  //   });
+
+  //   setCalendarData(data);
+  // },[]);
+
   useEffect(() => {
-    const dummyData = [
-      { date: '2025-06-30', title: 'aaaa',author: 'dd is good', color: '#D8FFE3' },
-      { date: '2025-06-30', title: 'travcommoeefsfefaefnadlikeiyoudel',author: 'lucy is good', color: '#D8FFE3' },
-      { date: '2025-06-01', title: 'friends is aefeafefaefaefgood godd gdodo',author: 'happy day', color: '#FFDEE3' },
-      { date: '2025-06-04', title: 'mylife haha', author: 'goodluct',color: '#FFF3C7' },
-      { date: '2025-06-13', title: 'today mtoydkaynood is ood',author: 'applecomapny', color: '#FFF9C4' },
-      { date: '2025-06-22', title: 'LUY ',author: 'drawio', color: '#D8FFE3' },
-      { date: '2025-06-11', title: 'hate yourseaefaeflf', author: 'phone',color: '#FFDCFA' },
-      { date: '2025-06-11', title: 'Love youaeaefefaefrself', author: 'phone',color: '#FFDCFA' },
-      { date: '2025-06-11', title: 'Love youaaefaeefefefaefrself', author: 'phone',color: '#FFDCFA' },
-      { date: '2025-06-11', title: 'Love yoaefafeaefeurself', author: 'phone',color: '#FFDCFA' },
-      { date: '2025-06-11', title: 'Love yourself', author: 'phone',color: '#FFDCFA' },
-    ];
+      const fetchData = async () => {
+        try {
+          // 1. 모든 history 불러오기
+          const historyRes = await fetch("http://localhost:8000/api/history");
+          const histories = await historyRes.json();
+          console.log(histories)
+        
+          const data = {};
+          histories.forEach(({createdAt,content ,book, author, mood, music, artist}) => {
+            const date = new Date(createdAt).toLocaleDateString('en-CA');
+            data[date] =data[date] || [];
+            data[date].push({ content:content,book: book, author: author ,mood: mood ,music:music,artist:artist});
+          });
+          console.log(data);
 
-    const data = {};
-    dummyData.forEach(({date, title, author, color}) => {
-      data[date] =data[date] || [];
-      data[date].push({ title: title, author: author ,color: color });
-    });
+        setCalendarData(data);
+        } catch (err) {
+          console.error("데이터 불러오기 실패:", err);
+        }
+      };
 
-    setCalendarData(data);
-  },[]);
+    fetchData();
+  }, []);
 
   const handleDateClick = (date) => {
     const dateString = date.toLocaleDateString('en-CA');
@@ -55,11 +80,11 @@ const CalendarList = () => {
       tileContent={({ date, view }) => {
         const dateString =date.toLocaleDateString('en-CA');  //날짜를 문자열로 변환 
         if (view === 'month' && calendarData[dateString]) {
-          const { title, author, color } = calendarData[dateString][0]; //첫번째 요소만 달력에 표시하기 
+          const { book, author, mood } = calendarData[dateString][0]; //첫번째 요소만 달력에 표시하기 
 
           return (
-            <Background style={{backgroundColor: color}}>
-            <Title>{title}</Title>
+            <Background style={{backgroundColor: mood}}>
+            <Title>{book}</Title>
             <Author>{author}</Author>
             </Background>
           );
@@ -69,7 +94,7 @@ const CalendarList = () => {
     />
 
     {showPopup && (
-      <CalendarPopup
+      <CalendarPopup 
       calendarData={calendarData} selectedDate={selectedDate}  closePopup={closePopup} 
       />
     )}
