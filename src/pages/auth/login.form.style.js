@@ -17,10 +17,9 @@ L.LoginContainer = styled.div`
 L.Form = styled.form`
   width: 100%;
   max-width: 423px;
-  padding: 53px 68px 58px;
+  padding: 53px 68px 50px;
   display: flex;
   flex-direction: column;
-  /* gap: 24px; */
 `;
 
 L.Label = styled.label`
@@ -76,6 +75,16 @@ L.Label = styled.div`
     margin-bottom: 0;
   }
 `
+L.InsideLabel = styled.div`
+  width: 423px;
+  margin-bottom: 22px;
+  display: flex;
+  flex-direction: column;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+`
 
 L.LoginRightBox = styled.div`
   background-color: white;
@@ -105,6 +114,7 @@ L.StyledSpan = styled.p`
   word-wrap: break-word;
 
   &.signup {
+    all: unset;
     color: #282828;
     font-size: 16px;
     font-family: Pretendard;
@@ -113,6 +123,7 @@ L.StyledSpan = styled.p`
     word-wrap: break-word;
     background: none;
   }
+
 `
 
 // 2번섹션
@@ -235,17 +246,10 @@ L.FindPassword = styled.button`
 L.SignupWrap = styled.div`
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   margin-top: 24px;
 `;
 
-// 로그인유도 질문 + 버튼 스타일 wrap   --- 회원가입에 있는 이미회원이신가요? 로그인
-L.LoginWrap = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 4px;
-`
 
 
 // 인증 필드와 버튼을 가로로 배치하는 wrapper
@@ -270,6 +274,9 @@ L.SmallButton = styled.button`
   &:disabled {
     background-color: #BFBFBF;
     cursor: not-allowed;
+  }
+  &:hover {
+    color: #EB5757;
   }
 `;
 
@@ -314,6 +321,39 @@ L.AgreementItem = styled.label`
   gap: 8px;
   font-size: 14px;
 `;
+
+
+// 아이디 비밀번호 찾기 스타일 
+L.SearchButtonWrapper = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+`
+
+L.ScrollSection = styled.div`
+  overflow-y: auto;
+  overflow-x: hidden; 
+  box-sizing: border-box;
+  width: 100%;
+  height: 370px;
+  scrollbar-gutter: stable;
+
+  /* 스크롤바 숨기기 (크로스 브라우징) */
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE 10+ */
+
+  &::-webkit-scrollbar {
+    display: none;                /* Chrome, Safari, Opera */
+  }
+`
+
+L.SearchFormSection = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+
+
 
 
 export default L;

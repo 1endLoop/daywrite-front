@@ -5,8 +5,7 @@
   import Layout from "../pages/layout/Layout";
 
   // Auth
-  import Login from "../pages/auth/Login";
-  import Signup from "../pages/auth/SignUp";
+  import Auth from "../pages/auth/Auth";
 
   // Category
   import CategoryContainer from "../pages/category/CategoryContainer";
@@ -49,9 +48,10 @@
   import Terms from "../pages/my_page/Terms";
   import ProfileHomePopup from "../pages/my_page/ProfileHomePopup";
   import BookmarkMain from "../pages/archive/BookmarkMain";
-import BookmarkAll from "../pages/archive/ BookmarkAll";
-import BookmarkTyped from "../pages/archive/BookmarkTyped";
+  import BookmarkAll from "../pages/archive/ BookmarkAll";
+  import BookmarkTyped from "../pages/archive/BookmarkTyped";
   import BookmarkNewFolder from "../pages/archive/BookmarkNewFolder"; // 추가
+import Search from "../pages/auth/Search";
   
   
 
@@ -235,11 +235,19 @@ import BookmarkTyped from "../pages/archive/BookmarkTyped";
     },
     {
       path: "/login",
-      element: <Login />,
+      element: <Auth />,
     },
     {
       path: "/signup",
-      element: <Signup />,
+      element: <Auth />,
+    },
+    {
+      path: "/search/:type",
+      element: <Auth />
+    },
+    {
+      path: "/search",
+      element: <Navigate to="/search/id" replace />
     },
     {
       path: "*",
