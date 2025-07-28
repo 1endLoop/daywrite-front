@@ -43,9 +43,12 @@ const HistoryDetail = ({ data, onClose, onToggleBookmark }) => {
         <S.Content>{content}</S.Content>
 
         <S.SourceBox>
-          <span className="label">출처</span>
-          <span className="title">{book}</span>
-          <span className="author">{author}</span>
+          <div>
+            <span className="label">출처</span>
+            <span className="title">{book}</span>
+            <span className="author">{author}</span>
+          </div>
+       
         </S.SourceBox>
 
         <S.Divider />
