@@ -1,6 +1,6 @@
 import React from 'react';
 import { filledButtonCSS } from '../../components/button/style';
-import C from '../auth/category.container.form.style';
+import C from './category.container.form.style';
 import BasicButton from '../../components/button/BasicButton'
 import { useForm } from 'react-hook-form';
 import { useState } from 'react';

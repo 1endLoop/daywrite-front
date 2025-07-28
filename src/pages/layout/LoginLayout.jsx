@@ -12,7 +12,7 @@ const LoginLayout = () => {
         console.log("accessToken", accessToken)
         if(accessToken){
             localStorage.setItem("jwtToken", accessToken)
-            navigate("/", { replace: true }) //  replace: true -> 기록 삭제
+            navigate("/auth/category", { replace: true }) //  replace: true -> 기록 삭제
         }
 
         const localToken = localStorage.getItem("jwtToken");
@@ -22,7 +22,7 @@ const LoginLayout = () => {
     }, [searchParams, navigate])
 
     return (
-       <Outlet />
+        <Outlet />
     );
 };
 

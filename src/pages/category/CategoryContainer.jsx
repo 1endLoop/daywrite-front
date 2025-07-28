@@ -1,31 +1,15 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import CategoryContainerForm from "./CategoryContainerForm";
 import S from "./style";
+import Header from "../../components/Header";
 
 const CategoryContainer = () => {
   return (
     <S.Container>
       <S.Background />
 
-      <S.Header>
-        <S.HeaderContent>
-          <Link to="/">
-            <S.Logo src="/assets/images/logo.png" alt="logo" />
-          </Link>
+      <Header/>
 
-          <S.Nav>
-            <Link to="/category">category</Link>
-            <Link to="/archive">archive</Link>
-            <Link to="/community">community</Link>
-            <Link to="/mypage">my page</Link>
-          </S.Nav>
-          
-          <S.Login>
-            <Link to="/login">login</Link>
-          </S.Login>
-        </S.HeaderContent>
-      </S.Header>
       <S.ContentWrapper>
       <CategoryContainerForm />
       </S.ContentWrapper>
