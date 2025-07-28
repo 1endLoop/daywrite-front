@@ -158,9 +158,9 @@ export const filledButtonCSS = css`
   display: inline-flex;
 
   color: white;
-  font-size: 20px;
+  font-size: 18px;
   font-family: Pretendard;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 30px;
   word-wrap: break-word;
 
@@ -184,12 +184,12 @@ export const outlineButtonCSS = css`
   width: 420px;
   /* height: 57px; */
   padding: 15px 0;
-  border: 2px solid #282828;
-  font-size: 20px;
+  border: 1.2px solid #282828;
+  font-size: 18px;
   font-family: Pretendard;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 30px;
-  background-color: white;
+  background-color: #ffffff;
   color: #282828;
   display: flex;
   justify-content: center;

@@ -33,9 +33,9 @@ function App() {
       isAuthenticate()
         .then((res) => {
           const {user, message} = res;
-          console.log("app에서 최초 요청", res)
-          dispatch(setUser(user))
-          dispatch(setUserStatus(true))
+          console.log("app에서 최초 요청", res);
+          dispatch(setUser(user));
+          dispatch(setUserStatus(true));
         })
     }
 }, [userStatus])

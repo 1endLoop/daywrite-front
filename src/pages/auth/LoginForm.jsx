@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import L from './login.form.style';
 import BasicButton from '../../components/button/BasicButton'
@@ -6,16 +6,18 @@ import { filledButtonCSS } from '../../components/button/style';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setUserStatus, setUser } from '../../modules/user/user';
-import LoginFailPopup from './LoginFailPopup';
+import AuthPopup from './AuthPopup';
+import Toast from "../../components/Toast";
 
 
 const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loginFailPopup, setLoginFailPopup] = useState(false);
+  const [toast, setToast] = useState(null);
 
   const {
-    register, handleSubmit, getValues, formState: {isSubmitting, isSubmitted, errors }
+    register, handleSubmit, getValues, setValue, formState: {isSubmitting, isSubmitted, errors }
   } = useForm({ mode: "onChange" })
 
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -23,12 +25,50 @@ const LoginForm = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch()
 
-  const userStatus = useSelector((state) => state.user.isLogin);
-  const currentUser = useSelector((state) => state.user.currentUser);
+  // const userStatus = useSelector((state) => state.user.isLogin);
+  // const currentUser = useSelector((state) => state.user.currentUser);
+
+  // useEffect(() => {
+  //   const savedEmail = localStorage.getItem("rememberedEmail");
+  //   if (savedEmail) {
+  //     setValue("email", savedEmail); // react-hook-form에서 email 필드 초기화
+  //     setRememberMe(true);           // 체크박스 상태도 true로
+  //   }
+  // }, []);
+
+  useEffect(() => {
+    const savedEmail = sessionStorage.getItem("rememberedEmail");
+    if (savedEmail) {
+      setValue("email", savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
+
+
+  // 토스트 설정
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer); // 컴포넌트 언마운트 시 타이머 제거
+    }
+  }, [toast]);
 
 
   return (
     <L.LoginContainer>
+
+    {/* 로그인 실패시 팝업 */}
+    {loginFailPopup && (
+      <AuthPopup 
+        title="일치하는 회원정보가 없습니다."
+        content="아직 회원이 아니신가요?"
+        gosearch="회원정보 찾기"
+        gosignup="회원가입 하러가기"
+        onClose={() => setLoginFailPopup(false)}
+        showCancel={false}
+      />
+    )}
+
       <L.LoginLeftBox>
         <L.Logo src="/assets/images/logo.png" alt="logo" />
         <L.LoginSubText>글과 음악이 함께하는 공간.</L.LoginSubText>
@@ -37,10 +77,24 @@ const LoginForm = () => {
 
       <L.LoginRightBox>
       <L.Form onSubmit={handleSubmit(async (datas) => {
-        // submit이 클릭되었을 때 가로채어 데이터들을 처리한다.
-        console.log(datas)
+        const email = datas.email;
 
-        await fetch(`${process.env.REACT_APP_BACKEND_URL}/auth/local`, {
+        // 1. 아이디 저장 여부에 따라 localStorage 설정
+        // if (rememberMe) {
+        //   localStorage.setItem("rememberedEmail", email);
+        // } else {
+        //   localStorage.removeItem("rememberedEmail");
+        // }
+
+        if (rememberMe) {
+          sessionStorage.setItem("rememberedEmail", email);
+        } else {
+          sessionStorage.removeItem("rememberedEmail");
+        }
+
+
+        // 2. 로그인 요청
+        await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/auth/local`, {
           method : "POST",
           headers : {
             "Content-Type" : "application/json"
@@ -50,31 +104,44 @@ const LoginForm = () => {
             password: datas.password,
           })
         })
-        .then(async (res) => {
-          // 실패했다면
-          if(!res.ok) {
-            const errorResponse = await res.json();
-            throw new Error(errorResponse.message || "로그인에 실패했습니다.")
-          }
-          return res.json()
-        })
-        .then((res) => {
-          // 성공했다면
-          const { accessToken } = res;
-          // 로그인을 완료한 유저의 상태를 리덕스에 저장하는 코드
-          console.log(res)
-          // console.log(res.accessToken)
-          localStorage.clear();
-          localStorage.setItem("token", accessToken);
-          dispatch(setUser(res.currentUser));  // 사용자 정보 저장
-          dispatch(setUserStatus(true));       // 로그인 상태 true로 변경
-          navigate("/");
 
+        .then(async (res) => {
+        // 실패했다면
+          if (!res.ok) {
+            const contentType = res.headers.get("content-type");
+            let errorMessage = setToast("로그인에 실패했습니다.");
+
+            if (contentType && contentType.includes("application/json")) {
+              const errorResponse = await res.json();
+              errorMessage = errorResponse.message || errorMessage;
+            } else {
+              const errorText = await res.text();  // ← "Unauthorized"
+              errorMessage = errorText || errorMessage;
+            }
+
+            setLoginFailPopup(true);  // 팝업 띄우기
+            throw new Error(errorMessage);
+          }
+
+          return res.json();
         })
-        .catch(async (err) => {
-          console.error("로그인 실패:", err.message);
-          setLoginFailPopup(true);
-        });
+
+        .then((res) => {
+          console.log(res);
+          
+          // 성공했다면
+          const {currentUser, isLogin } = res;
+          // 로그인을 완료한 유저의 상태를 리덕스에 저장하는 코드
+          if (res.accessToken) {
+            localStorage.setItem("jwtToken", res.accessToken);
+          }
+
+          dispatch(setUser(currentUser));
+          dispatch(setUserStatus(isLogin));
+          navigate("/");
+        })
+        .catch(console.log);
+
       })}>
 
           <L.FormSection>
@@ -137,7 +204,15 @@ const LoginForm = () => {
                 </L.RememberMe>
                 
                 <L.FindPassword type="button" >
-                  <L.CommonSubText>비밀번호 찾기</L.CommonSubText>
+                  <span>
+                    <Link to="/search/id">
+                      <L.CommonSubText>아이디 찾기</L.CommonSubText>
+                    </Link>
+                    <L.CommonSubText>&nbsp; | &nbsp;</L.CommonSubText>
+                    <Link to="/search/password">
+                      <L.CommonSubText>비밀번호 찾기</L.CommonSubText>
+                    </Link>
+                  </span>
                 </L.FindPassword>
               </L.LoginExtras>
 
@@ -155,10 +230,6 @@ const LoginForm = () => {
 
       </L.Form>
       </L.LoginRightBox>
-
-    {loginFailPopup && (
-      <LoginFailPopup onClose={() => setLoginFailPopup(false)} />
-    )}
 
     </L.LoginContainer>
   );
