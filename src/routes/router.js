@@ -122,6 +122,10 @@ import BookmarkTyped from "../pages/archive/BookmarkTyped";
             path: "liked",
             element: <LikedList />,
           },
+          {
+            path: "bookmark/playedList",
+            element: <BookmarkPlyedList />,
+          },
         ],
       },
       // 커뮤니티

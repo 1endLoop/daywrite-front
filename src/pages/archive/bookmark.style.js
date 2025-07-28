@@ -152,6 +152,13 @@ S.HeaderBox = styled.div`
         color: #787878;
     }
 `
+S.BackBtn = styled.button`
+  font-size: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+`;
+
 S.Search = styled.div`
     width: 250px;
     height: 30px;
@@ -392,7 +399,7 @@ S.PlayedCardBox = styled.div`
         margin-left: 27px;
     }
     .singName{
-        border: solid 1px black;
+        /* border: solid 1px black; */
         width: 230px;
         height: 35px;
         margin-left: 30px;
@@ -404,7 +411,7 @@ S.PlayedCardBox = styled.div`
         }
     }
     .artistName{
-        border: solid 1px black;
+        /* border: solid 1px black; */
         width: 100px;
         height: 35px;
         margin-left: 20px;
@@ -419,13 +426,18 @@ S.PlayedCardBox = styled.div`
         border: solid 1px black;
         width: 70px;
         height: 35px;
-        margin-left: 20px;
+        margin-left: 25px;
     }
     .play{
         border: solid 1px black;
         width: 90px;
         height: 35px;
         margin-left: 20px;
+        img{
+            width: 20px;
+            height: 20px;
+            border: solid 1px red;
+        }
     }
 `
 

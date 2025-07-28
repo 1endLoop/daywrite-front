@@ -4,11 +4,46 @@ import P from './main.playlist.popup.style';
 const MainPlaylistPopup = ({ onClose, data }) => {
     // 좋아요 상태
   const [playlist, setPlaylist] = useState(data);
-  const toggleLike = (index) => {
-    const updated = [...playlist];
-    updated[index].liked = !updated[index].liked;
-    setPlaylist(updated);
-  };
+  // const toggleLike = (index) => {
+  //   const updated = [...playlist];
+  //   updated[index].liked = !updated[index].liked;
+  //   setPlaylist(updated);
+  // };
+  const toggleLike = async (index) => {
+  const updated = [...playlist];
+  updated[index].liked = !updated[index].liked;
+  setPlaylist(updated);
+
+  const { title, artist, liked } = updated[index];
+
+  try {
+    if (liked) {
+      // ❤️ 저장 요청
+      await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/playlist/liked`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ songs: [{ title, artist }] }),
+      });
+      console.log("좋아요 저장됨:", title);
+    } else {
+      // ❤️ 취소 → 서버에서 삭제하거나 무시 (옵션)
+      await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/playlist/unlike`, {
+        method: "POST", // 혹은 DELETE
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title, artist }),
+      });
+      console.log("좋아요 취소됨:", title);
+    }
+  } catch (err) {
+    console.error("좋아요 처리 오류:", err);
+  }
+};
+
+
 
   // 드래그 관련 상태
   const popupRef = useRef(null);
