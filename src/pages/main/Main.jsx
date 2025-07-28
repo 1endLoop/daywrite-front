@@ -1,32 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React from "react";
 import S from "./style";
 import MainContainer from "./MainContainer";
-import BasicButton from "../../components/button/BasicButton";
+import Header from "../../components/Header";
 
 const Main = () => {
   return (
     <S.Container>
       <S.Background />
 
-      <S.Header>
-        <S.HeaderContent>
-          <Link to="/">
-            <S.Logo src="/assets/images/logo.png" alt="logo" />
-          </Link>
+      <Header/>
 
-          <S.Nav>
-            <Link to="/category">category</Link>
-            <Link to="/archive">archive</Link>
-            <Link to="/community">community</Link>
-            <Link to="/mypage">my page</Link>
-          </S.Nav>
-
-          <S.Login>
-            <Link to="/login"> login </Link>
-          </S.Login>
-        </S.HeaderContent>
-      </S.Header>
       <S.ContentWrapper>
       <MainContainer />
       </S.ContentWrapper>

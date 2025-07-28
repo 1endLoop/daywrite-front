@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import L from './login.form.style';
 import BasicButton from '../../components/button/BasicButton'
@@ -7,15 +7,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setUserStatus, setUser } from '../../modules/user/user';
 import AuthPopup from './AuthPopup';
+import Toast from "../../components/Toast";
 
 
 const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loginFailPopup, setLoginFailPopup] = useState(false);
+  const [toast, setToast] = useState(null);
 
   const {
-    register, handleSubmit, getValues, formState: {isSubmitting, isSubmitted, errors }
+    register, handleSubmit, getValues, setValue, formState: {isSubmitting, isSubmitted, errors }
   } = useForm({ mode: "onChange" })
 
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -23,8 +25,33 @@ const LoginForm = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch()
 
-  const userStatus = useSelector((state) => state.user.isLogin);
-  const currentUser = useSelector((state) => state.user.currentUser);
+  // const userStatus = useSelector((state) => state.user.isLogin);
+  // const currentUser = useSelector((state) => state.user.currentUser);
+
+  // useEffect(() => {
+  //   const savedEmail = localStorage.getItem("rememberedEmail");
+  //   if (savedEmail) {
+  //     setValue("email", savedEmail); // react-hook-form에서 email 필드 초기화
+  //     setRememberMe(true);           // 체크박스 상태도 true로
+  //   }
+  // }, []);
+
+  useEffect(() => {
+    const savedEmail = sessionStorage.getItem("rememberedEmail");
+    if (savedEmail) {
+      setValue("email", savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
+
+
+  // 토스트 설정
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer); // 컴포넌트 언마운트 시 타이머 제거
+    }
+  }, [toast]);
 
 
   return (
@@ -50,9 +77,23 @@ const LoginForm = () => {
 
       <L.LoginRightBox>
       <L.Form onSubmit={handleSubmit(async (datas) => {
-        // submit이 클릭되었을 때 가로채어 데이터들을 처리한다.
-        console.log(datas)
+        const email = datas.email;
 
+        // 1. 아이디 저장 여부에 따라 localStorage 설정
+        // if (rememberMe) {
+        //   localStorage.setItem("rememberedEmail", email);
+        // } else {
+        //   localStorage.removeItem("rememberedEmail");
+        // }
+
+        if (rememberMe) {
+          sessionStorage.setItem("rememberedEmail", email);
+        } else {
+          sessionStorage.removeItem("rememberedEmail");
+        }
+
+
+        // 2. 로그인 요청
         await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/auth/local`, {
           method : "POST",
           headers : {
@@ -63,20 +104,12 @@ const LoginForm = () => {
             password: datas.password,
           })
         })
-        // .then((res) => {
-        //   // 실패했다면
-        //   if(!res.ok) {
-        //     const errorResponse = res.json();
-        //     throw new Error(errorResponse.message || "로그인에 실패했습니다.")
-        //   }
-        //   setLoginFailPopup(true);
-        //   return res.json()
-        // })
+
         .then(async (res) => {
         // 실패했다면
           if (!res.ok) {
             const contentType = res.headers.get("content-type");
-            let errorMessage = "로그인에 실패했습니다.";
+            let errorMessage = setToast("로그인에 실패했습니다.");
 
             if (contentType && contentType.includes("application/json")) {
               const errorResponse = await res.json();

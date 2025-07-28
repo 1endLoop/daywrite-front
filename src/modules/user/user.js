@@ -18,8 +18,10 @@ const UserInitalValue = {
 const user = handleActions({
 
     [SET_PREVIOUS_URL] : (state = UserInitalValue, action) => ({...state, previousUrl: action.payload}),
-    [SET_USER] : (state = UserInitalValue, action) => ({...state, currentUser: action.payload}),
-    [SET_USER_STATUS] : (state = UserInitalValue, action) => ({...state, isLogin: action.payload})
+    // [SET_USER] : (state = UserInitalValue, action) => ({...state, currentUser: action.payload}),
+    // [SET_USER_STATUS] : (state = UserInitalValue, action) => ({...state, isLogin: action.payload})
+    [SET_USER]: (state, action) => ({ ...state, currentUser: action.payload }),
+    [SET_USER_STATUS]: (state, action) => ({ ...state, isLogin: action.payload })
 
 }, UserInitalValue);
 
