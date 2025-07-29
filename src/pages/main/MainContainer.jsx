@@ -75,7 +75,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
         const isDefault = img === DEFAULT_LASTFM_IMAGE
 
         return {
-          img: isDefault ? "/assets/images/album_cover/smiley.ori.jpg" : img, // 앨범커버 안불러와지면 스마일리 커버 띄우기
+          img: isDefault ? "/assets/images/album_cover/smiley.ori.jpg" : img, 
           title: track.name,
           artist: track.artist,
           liked: false,
@@ -221,7 +221,6 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
       setTimeout(() => setToast(null), 2000);
 
       // 페이지 이동 제거 
-      // navigate("/archive/bookmark/typed/1");
     } catch (err) {
       console.error("북마크 저장 에러:", err);
       alert("에러: " + err.message);
@@ -243,7 +242,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
       )}
 
       {showPlaylist && <MainPlaylistPopup onClose={() => setShowPlaylist(false)} data={musicList} />}
-
+      
       <M.Container>
         <M.Content01>
           <M.TitleWrap>
