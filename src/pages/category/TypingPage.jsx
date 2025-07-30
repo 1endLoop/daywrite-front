@@ -59,12 +59,6 @@ const TypingPage = () => {
 
     // 음악 API도 같은 함수 내에서 호출
     const music = await fetchRecommendedMusic(selectedKeywords, selectedGenres);
-    // const parsed = music.map((track) => ({
-    //   img: track.image?.[2]?.["#text"] || "/assets/images/album_cover/default.jpg", // 기본 이미지 fallback
-    //   title: track.name,
-    //   artist: track.artist,
-    //   liked: false,
-    // }));
 
     const DEFAULT_LASTFM_IMAGE ="https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png";
 
@@ -85,10 +79,10 @@ const TypingPage = () => {
     setCurrentSong(parsed[0]); // 첫 곡을 현재 곡으로 설정
     console.log("추천음악:", music)
 
-  } catch (error) {
-    console.error("글 불러오기 실패:", error);
-  }
-};
+    } catch (error) {
+      console.error("글 불러오기 실패:", error);
+    }
+  };
 
 
   useEffect(() => {
