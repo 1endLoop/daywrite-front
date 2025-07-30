@@ -6,7 +6,7 @@ P.PopupContainer = styled.div`
   position: absolute;
   top: 80px;
   right: 30px;
-  width: 250px;
+  width: 400px;
   background: white;
   border: 1px solid #dcdcdc;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
@@ -57,11 +57,22 @@ P.Item = styled.div`
 `;
 
 P.ArtistWrap = styled.div`
-  justify-content: flex-start;
-  align-items: center;
-  gap: 8px;
-  display: inline-flex;
-`
+  display: flex;
+  align-items: flex-start; 
+  gap: 12px;
+
+  img {
+    width: 48px;
+    height: 48px;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 5px;
+    border: 0.5px solid #000;
+    flex-shrink: 0; 
+  }
+`;
+
+
 P.TitleWrap = styled.div`
   flex-direction: column;
   justify-content: flex-start;
@@ -71,7 +82,7 @@ P.TitleWrap = styled.div`
 `
 
 P.SongTitle = styled.p`
-  font-weight: bold;
+  font-weight: 500;
   margin: 0;
 `;
 

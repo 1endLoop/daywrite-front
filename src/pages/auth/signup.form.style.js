@@ -19,17 +19,28 @@ S.LoginContainer = styled.div`
 S.ScrollSection = styled.div`
   overflow-y: auto;
   overflow-x: hidden; 
-  padding: 0 16px 70px 0;
   box-sizing: border-box;
   width: 100%;
-  height: 540px;
+  height: 470px;
   scrollbar-gutter: stable;
+
+  /* 스크롤바 숨기기 (크로스 브라우징) */
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE 10+ */
+
+  &::-webkit-scrollbar {
+    display: none;                /* Chrome, Safari, Opera */
+  }
+  
+  &.search {
+    height: 370px;
+  }
 `;
 
 S.Form = styled.form`
   width: 100%;
-  max-width: 440px;
-  padding: 53px 46px 58px 68px;
+  max-width: 423px;
+  padding: 53px 68px 58px;
   display: flex;
   flex-direction: column;
 `;
@@ -65,9 +76,14 @@ S.FormSection = styled.div`
   display: flex;
   flex-direction: column;
   margin-bottom: 44px;
+  width: 423px;
   
   &:last-child {
     margin-bottom: 0;
+  }
+
+  &.search {
+    margin: none;
   }
 `;
 
@@ -105,6 +121,15 @@ S.LoginRightBox = styled.div`
   max-height: 700px;
   min-height: 700px;
   overflow: hidden;
+
+  &.search {
+  background-color: white;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  display: inline-flex;
+  gap: 44px;
+  }
 `;
 
 S.Title = styled.h1`
@@ -112,6 +137,10 @@ S.Title = styled.h1`
   font-weight: bold;
   color: #282828;
   margin-bottom: 8px;
+
+  &.search {
+  margin-bottom: 40px;
+  }
 `
 
 // 일반텍스트 스타일 (Welcome to daywrite! + 아직 회원이 아니신가요?)
@@ -124,6 +153,7 @@ S.StyledSpan = styled.p`
   word-wrap: break-word;
 
   &.signup {
+    all: unset;
     color: #282828;
     font-size: 16px;
     font-family: Pretendard;
@@ -131,6 +161,21 @@ S.StyledSpan = styled.p`
     line-height: 24px;
     word-wrap: break-word;
     background: none;
+  }
+
+  &.search {
+    all: unset;
+    color: #282828;
+    font-size: 15px;
+    font-family: Pretendard;
+    font-weight: 500;
+    line-height: 24px;
+    word-wrap: break-word;
+    background: none;
+  }
+
+  &:hover {
+    color: #EB5757;
   }
 `
 
@@ -214,20 +259,11 @@ S.ToggleButton = styled.button`
   }
 `;
 
-
-// 회원가입유도 질문 + 버튼 스타일 wrap   --- 로그인에 있는 아직회원이 아니신가요? 회원가입 
-S.SignupWrap = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 24px;
-`;
-
 // 로그인유도 질문 + 버튼 스타일 wrap   --- 회원가입에 있는 이미회원이신가요? 로그인
 S.LoginWrap = styled.div`
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   margin-top: 4px;
 `;
 
@@ -380,6 +416,47 @@ S.CloseButton = styled.button`
     height: 30px;
   }
 `
+
+
+
+
+// 아이디 비밀번호 찾기 스타일 
+S.SearchButtonWrapper = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+`
+
+S.SearchScrollSection = styled.div`
+  overflow-y: auto;
+  overflow-x: hidden; 
+  box-sizing: border-box;
+  width: 100%;
+  height: 370px;
+  scrollbar-gutter: stable;
+
+  /* 스크롤바 숨기기 (크로스 브라우징) */
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE 10+ */
+
+  &::-webkit-scrollbar {
+    display: none;                /* Chrome, Safari, Opera */
+  }
+`
+
+S.SearchFormSection = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+S.SearchRightBox = styled.div`
+  background-color: white;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  display: inline-flex;
+  gap: 44px;
+`;
 
 
 export default S;
