@@ -2,6 +2,96 @@ import styled from "styled-components";
 
 const S = {}
 
+// BookmarkPlayedNewFolder
+S.TopRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 30px 0 0 0;
+  gap: 3px;
+  width: 310px;
+`;
+
+S.BackBtn = styled.button`
+  font-size: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+`;
+
+S.PageTitle = styled.h2`
+  font-size: 20px;
+  font-weight: bold;
+`;
+
+S.NewFodler = styled.h3`
+  font-size: 16px;
+  font-weight: normal;
+  margin-left: 15px;
+  cursor: pointer;
+  &:hover {
+    color: #F96F3D;
+  } 
+`
+S.SearchBar = styled.input`
+  margin-left: auto;
+  width: 240px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+`;
+// 본문 내용
+S.ContentWrapper = styled.div`
+  display: flex;
+  gap: 150px;
+  padding: 20px 0 0 50px;
+`;
+// 썸네일 영역
+S.ThumbnailBox = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 200px;
+`;
+S.ImgWrapper = styled.div`
+  /* border-radius: 8px; */
+  width: 120px;
+  height: 120px;
+  margin-top: 0px;
+  background-color: #e0e0e0;
+  /* border: solid 1px red; */
+  #profile {
+    display: none;
+  }
+`;
+S.Label = styled.label`
+
+`;
+S.Profile = styled.img`
+  width: 120px;
+  height: 120px;
+  border: none;
+`;
+S.FolderName = styled.input`
+  background-color: #fee9e2;
+  margin-top: 5px;
+  border: none;
+  border-radius: 5px;
+  font-size: 12px;
+  padding: 2px;
+  width: 115px;
+  height: 20px;
+`;
+S.NewFolderTextCount = styled.span`
+  font-size: 14px;
+  color: gray;
+  margin-top: 50px;
+  margin-left: 6px;
+`;
+
+
+// playedCard
 S.PlayBox = styled.div`
     /* border: solid 1px black; */
     width: 700px;

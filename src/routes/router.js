@@ -22,6 +22,7 @@
   import BookmarkTypedList from "../pages/archive/BookmarkTypedList";
   import BookmarkPlyedList from "../pages/archive/BookmarkPlyedList";
   import LikedList from "../pages/archive/LikedList";
+  import BookmarkPlayedNewFolder from "../pages/archive/BookmarkPlayedNewFolder";
 
   // Community
   import CommunityContainer from "../pages/community/CommunityContainer";
@@ -124,7 +125,11 @@ import BookmarkTyped from "../pages/archive/BookmarkTyped";
           },
           {
             path: "bookmark/playedList",
-            element: <BookmarkPlyedList />,
+            element: <BookmarkPlyedList />, // 추가
+          },
+          {
+            path: "bookmark/playedNewFolder",
+            element: <BookmarkPlayedNewFolder /> // 추가
           },
         ],
       },
