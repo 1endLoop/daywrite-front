@@ -102,7 +102,7 @@ const BookmarkAll = () => {
           title={item.title}
           count={item.playlistIds?.length || 0}
           type={item.type}
-          imageUrl={item.thumbnailUrl}     // 🔥 여기 중요!
+          imageUrl={item.thumbnailUrl}     
           onClick={() => console.log(item)} // 필요 시 상세 페이지로 이동 등
           />
         ))}
