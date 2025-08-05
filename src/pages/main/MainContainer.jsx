@@ -4,6 +4,8 @@ import M from "./main.form.style";
 import MainPopup from "./MainPopup";
 import MainPlaylistPopup from "./MainPlaylistPopup";
 import Toast from "../../components/Toast";
+import { fetchRecommendedMusic } from "../../api/musicApi";
+import { parse } from "@fortawesome/fontawesome-svg-core";
 
 const MainContainer = ({ isUpdate, setIsUpdate }) => {
   const [toast, setToast] = useState(null); // 토스트
@@ -53,19 +55,10 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
 
   // 플레이리스트
   const [showPlaylist, setShowPlaylist] = useState(false);
-  const dummyPlaylist = [
-    { img: "/assets/images/album_cover/love-on-top.jpg", title: "Love on Top", artist: "Beyonce", liked: true },
-    {
-      img: "/assets/images/album_cover/love-sick-girls.jpg",
-      title: "Love Sick Girls",
-      artist: "BlackPink(블랙핑크)",
-      liked: false,
-    },
-    { img: "/assets/images/album_cover/smiley.ori.jpg", title: "Smiley", artist: "YENA(최예나)", liked: false },
-    { img: "/assets/images/album_cover/summernignt.lyn.jpg", title: "한여름 밤", artist: "Lyn(린)", liked: true },
-    { img: "/assets/images/album_cover/the-winning.jpg", title: "the winning", artist: "IU(아이유)", liked: true },
-  ];
-  const [currentSong, setCurrentSong] = useState(dummyPlaylist[0]);
+  const [currentSong, setCurrentSong] = useState([0]);
+  const [musicList, setMusicList] = useState([])
+
+
 
   const fetchRandomScript = async () => {
     try {
@@ -75,6 +68,10 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
 
       const data = await response.json();
 
+      const keywords = data.keyword ?? [];
+      const genres = data.genre ?? [];
+  
+
       setCurrentData({
         typing: data.content,
         title: data.book,
@@ -83,6 +80,29 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
         publishedDate: data.publishedDate ?? "unknown",
         bookCover: data.bookCover ?? "",
       });
+
+      setSelectedKeywords(keywords)
+      setSelectedGenres(genres)
+
+      const music = await fetchRecommendedMusic(keywords, genres)
+
+      const DEFAULT_LASTFM_IMAGE =
+      "https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png";
+
+      const parsed = music.map((track) => {
+        const img = track.image?.[3]?.["#text"]
+        const isDefault = img === DEFAULT_LASTFM_IMAGE
+
+        return {
+          img: isDefault ? "/assets/images/album_cover/smiley.ori.jpg" : img, 
+          title: track.name,
+          artist: track.artist,
+          liked: false,
+        }
+      })
+
+      setMusicList(parsed)      
+      setCurrentSong(parsed[0])
 
       setInputValue("");
       setFade(true);
@@ -96,8 +116,6 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
     setFade(false);
     setTimeout(() => {
       fetchRandomScript();
-      const nextSong = dummyPlaylist[Math.floor(Math.random() * dummyPlaylist.length)];
-      setCurrentSong(nextSong);
     }, 300);
   };
 
@@ -136,6 +154,8 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
       bookCover: currentData.bookCover ?? "", // 이미지 없으면 빈 문자열
       music: currentSong.title,
       artist: currentSong.artist,
+      keyword: selectedKeywords,
+      genre: selectedGenres[0] ?? ""
     };
 
     try {
@@ -219,8 +239,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
       setToast("북마크에 저장되었습니다!");
       setTimeout(() => setToast(null), 2000);
 
-      // 페이지 이동 제거 ✅
-      // navigate("/archive/bookmark/typed/1");
+      // 페이지 이동 제거 
     } catch (err) {
       console.error("북마크 저장 에러:", err);
       alert("에러: " + err.message);
@@ -241,8 +260,8 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
         />
       )}
 
-      {showPlaylist && <MainPlaylistPopup onClose={() => setShowPlaylist(false)} data={dummyPlaylist} />}
-
+      {showPlaylist && <MainPlaylistPopup onClose={() => setShowPlaylist(false)} data={musicList} />}
+      
       <M.Container>
         <M.Content01>
           <M.TitleWrap>
