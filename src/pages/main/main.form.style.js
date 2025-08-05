@@ -195,9 +195,19 @@ M.TypingOverlay = styled.div`
   top: 0;
   left: 0;
   pointer-events: none;
-  color: transparent;
   z-index: 1;
+
+  font-family: Pretendard;
+  font-size: ${({ $fontSize }) => $fontSize}px;
+  font-weight: ${({ $fontWeight }) => $fontWeight};
+  line-height: ${({ $lineHeight }) => $lineHeight}px;
+  vertical-align: top;
+  color: transparent;
   letter-spacing: 0;
+  white-space: pre-wrap;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
 
   span {
     color: inherit;
@@ -209,21 +219,25 @@ M.HiddenInput = styled.textarea`
   position: absolute;
   top: 0;
   left: 0;
-  /* width: calc(100% - 20px);
-  height: calc(100% - 20px); */
   width: 100%;
   height: 100%;
   padding: 0;
+  margin: 0;
   border: none;
   background: transparent;
   color: transparent;
   caret-color: #282828;
   resize: none;
-  font-size: 20px;
-  line-height: 30px;
-  font-family: Pretendard;
   z-index: 2;
+
+  font-family: Pretendard;
+  font-size: ${({ $fontSize }) => $fontSize}px;
+  font-weight: ${({ $fontWeight }) => $fontWeight};
+  line-height: ${({ $lineHeight }) => $lineHeight}px;
+  vertical-align: top;
   letter-spacing: 0;
+  white-space: pre-wrap;
+  box-sizing: border-box;
 
   &:focus {
     outline: none;
