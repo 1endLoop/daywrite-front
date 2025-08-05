@@ -14,12 +14,13 @@ S.Container = styled.div`
 S.Background = styled.div`
   position: absolute;
   inset: 0;
-  background-image: url('/assets/images/background/snow.jpg');
+  background-image: ${({ $bg }) => `url(${$bg})`};
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
   z-index: 0;
 `;
+
 
 // 고정 헤더
 S.Header = styled.header`
