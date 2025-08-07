@@ -9,7 +9,7 @@ const Layout = () => {
 
   return (
     <S.Container>
-      <S.Background style={{ backgroundImage: `url(${backgroundImage})` }} />
+       <S.Background $bg={backgroundImage || "/assets/images/background/snow.jpg"} />
 
       <Header/>
 
