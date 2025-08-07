@@ -287,9 +287,9 @@ S.Thumbnail = styled.img`
   object-fit: cover;
   border-radius: 4px;
   cursor: pointer;
-  border: ${({ selected, confirmed }) => {
-    if (confirmed) return '2px solid #F86F3D'; // ✅ 최종 확정
-    if (selected) return '2px solid #5E4237'; // 선택
+  border: ${({ $selected, $confirmed }) => {
+    if ($confirmed) return '2px solid #F86F3D'; // ✅ 최종 확정
+    if ($selected) return '2px solid #5E4237'; // 선택
     return 'none';
   }};
 `;

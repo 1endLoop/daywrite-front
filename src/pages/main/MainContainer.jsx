@@ -34,6 +34,25 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
     setShowPopup(true);
   };
 
+  //fontsize, fontweight
+  const [fontSize, setFontSize] = useState(24);
+  const [fontWeight, setFontWeight] = useState(600);
+  const getLineHeight = (fontSize) => {
+    if (fontSize < 18) return Math.round(fontSize * 1.38);
+    if (fontSize < 24) return Math.round(fontSize * 1.4);
+    if (fontSize < 32) return Math.round(fontSize * 1.42);
+    return Math.round(fontSize * 1.45);
+  };
+  
+  const lineHeight = getLineHeight(fontSize);
+
+  useEffect(() => {
+    const savedSize = parseInt(localStorage.getItem("fontSize"), 10);
+    const savedWeight = parseInt(localStorage.getItem("fontWeight"), 10);
+    if (!isNaN(savedSize)) setFontSize(savedSize);
+    if (!isNaN(savedWeight)) setFontWeight(savedWeight);
+  }, []);
+
   // 플레이리스트
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [currentSong, setCurrentSong] = useState([0]);
@@ -113,7 +132,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
   const cycleWidth = tickWidth * 3 + pointWidth + gap * 3;
   const maxCycles = Math.floor(totalWidth / cycleWidth);
   const visibleCount = maxCycles * 4.5;
-
+  
   const current = inputValue.length;
   const total = currentData?.typing.length ?? 0;
   const percent = total > 0 ? Math.floor((current / total) * 100) : 0;
@@ -285,40 +304,43 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
 
           <M.FadeWrapper $fade={fade}>
             <M.ContentBox>
-              {currentData && (
-                <M.TypingOverlay aria-hidden>
-                  {currentData.typing.split("").map((char, index) => {
-                    const typedChar = inputValue[index];
-                    let color = "#BFBFBF";
-                    if (typedChar !== undefined) {
-                      color = typedChar === char ? "#282828" : "red";
-                      if (index === inputValue.length - 1 && inputValue.length === index + 1) {
-                        color = "#282828";
-                      }
+            {currentData && (
+              <M.TypingOverlay
+                $fontSize={fontSize}
+                $fontWeight={fontWeight}
+                $lineHeight={lineHeight}
+              >
+                {currentData.typing.split("").map((char, index) => {
+                  const typedChar = inputValue[index];
+                  let color = "#BFBFBF";
+                  if (typedChar !== undefined) {
+                    color = typedChar === char ? "#282828" : "red";
+                    if (index === inputValue.length - 1 && inputValue.length === index + 1) {
+                      color = "#282828";
                     }
-                    return (
-                      <span key={index} style={{ whiteSpace: "pre-wrap", color }}>
-                        {typedChar ?? char}
-                      </span>
-                    );
-                  })}
-                </M.TypingOverlay>
-              )}
-
-              <M.HiddenInput
-                // onKeyDown={onKeyDownAddTodo}
-                value={inputValue}
-                spellCheck={false}
-                onChange={(e) => {
-                  const newValue = e.target.value;
-                  console.log("입력된 값:", newValue);
-                  if (currentData && newValue.length <= currentData.typing.length) {
-                    setInputValue(newValue);
                   }
-                }}
-              />
-            </M.ContentBox>
-          </M.FadeWrapper>
+                  return (
+                    <span key={index} style={{ color }}>{typedChar ?? char}</span>
+                  );
+                })}
+              </M.TypingOverlay>
+            )}
+
+            <M.HiddenInput
+              value={inputValue}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                if (currentData && newValue.length <= currentData.typing.length) {
+                  setInputValue(newValue);
+                }
+              }}
+              spellCheck={false}
+              $fontSize={fontSize}
+              $fontWeight={fontWeight}
+              $lineHeight={lineHeight}
+            />
+          </M.ContentBox>
+        </M.FadeWrapper>
 
           <M.UnderContent>
             <M.Line />
