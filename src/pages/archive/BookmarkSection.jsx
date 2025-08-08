@@ -137,7 +137,7 @@ const BookmarkSection = ({ title, type }) => {
   useEffect(() => {
     const fetchFolders = async () => {
       try {
-        const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/bookmarks/folders`);
+        const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/bookmarkFolder/folders`);
         const data = await res.json();
         console.log("✅ folders API 응답:", data);
         setFolders(data);

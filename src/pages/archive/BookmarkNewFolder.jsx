@@ -12,6 +12,7 @@ const BookmarkNewFolder = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const [items, setItems] = useState([]);  
+  const [folderTitle, setFolderTitle] = useState("");
   useClickOutside(dropdownRef, () => setDropdownOpen(false));
 
   const dropdownInfo = dropdownOpen && {
@@ -26,6 +27,21 @@ const BookmarkNewFolder = () => {
       y: rect.bottom,
     });
   };
+
+      // 데이터 조회
+    useEffect(() => {
+        async function fetchData() {
+        try {
+            const res = await fetch("http://localhost:8000/api/bookmarkFolder/newFolder");
+            const result = await res.json();
+            setItems(result.bookmarkFolder); // 응답 데이터의 배열
+        } catch (err) {
+            console.error("데이터 조회 실패:", err);
+        }
+        }
+
+        fetchData();
+    }, []);
 
     const [selectedCards, setSelectedCards] = useState([]);
     // 클릭한 카드 데이터 저장
@@ -57,58 +73,6 @@ const BookmarkNewFolder = () => {
         }
     }
 
-    // 파일 업로드 함수
-    const handleThumbnailUpload = async () => {
-        if(!thumbnail){
-            alert("파일을 선택해주세요.")
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append("thumbnail", thumbnail)
-
-        try {
-            // const response = await fetch(process.env.REACT_APP_BACKEND_URL + '/images/thumbnail', {
-            //     method : 'POST',
-            //     headers : {
-            //         "Authorization" : `Bearer ${localStorage.getItem("jwtToken")}`
-            //         // "Content-Type": "multipart/form-data",
-            //     },
-            //     body : formData
-            // })
-            const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/images/thumbnail`, {
-                method: 'POST',
-                body: formData, // headers는 안 붙여도 됨
-            });
-
-
-            if(!response.ok){ alert("이미지 업로드 실패!"); return;}
-
-            const data = await response.json()
-            console.log(data)
-
-        } catch (error) {
-            console.log("handleThumbnailUpload error")
-            console.error(error)            
-        }
-
-    }
-
-    // 데이터 조회
-    useEffect(() => {
-        async function fetchData() {
-        try {
-            const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/NewFolder/newFolder`);
-            const result = await res.json();
-            setItems(result.bookmarkFolder); // 응답 데이터의 배열
-        } catch (err) {
-            console.error("데이터 조회 실패:", err);
-        }
-        }
-
-        fetchData();
-    }, []);
-
     // ==============================
     const handleCreateFolder = async () => {
     if (!thumbnail) {
@@ -119,12 +83,16 @@ const BookmarkNewFolder = () => {
         alert("카드를 하나 이상 선택해주세요.");
         return;
     }
+    if (!folderTitle.trim()) {
+    alert("폴더 이름을 입력해주세요.");
+    return;
+    }
 
     try {
         // 썸네일 먼저 업로드
         const formData = new FormData();
         formData.append("thumbnail", thumbnail);
-        const thumbRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/images/thumbnail`, {
+        const thumbRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/images/thumbnail`, {
         method: "POST",
         body: formData,
         });
@@ -133,11 +101,11 @@ const BookmarkNewFolder = () => {
         const { url: thumbnailUrl, filename, imageId } = data;
 
         // 폴더 생성 요청
-        const folderRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/bookmarks/folder`, {
+        const folderRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/bookmarkFolder/folder`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            title: "폴더명 예시", // 따로 인풋 받을 수도 있음
+            title: folderTitle, // 따로 인풋 받을 수도 있음
             type: "글", // 혹은 "곡"
             historyIds: selectedCards.map(card => card._id),
             thumbnailUrl,
@@ -185,7 +153,7 @@ const BookmarkNewFolder = () => {
                         id='profile' type='file' placeholder='썸네일'
                         onChange={handleImageChange}
                     />
-                    <S.ImgUpload onClick={handleThumbnailUpload}>이미지 업로드</S.ImgUpload>
+                    <S.FolderName placeholder="폴더 이름" value={folderTitle} onChange={(e) => setFolderTitle(e.target.value)} ></S.FolderName>
                 </S.ImgWrapper>
                 <S.NewFolderTextCount>{items.length}개의 글</S.NewFolderTextCount>
                 </S.ThumbnailBox>

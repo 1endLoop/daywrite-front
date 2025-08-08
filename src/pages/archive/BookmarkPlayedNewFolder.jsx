@@ -11,6 +11,8 @@ const BookmarkPlayedNewFolder = () => {
     const [thumbnail, setThumbnail] = useState(null); // 썸네일
     const [folderTitle, setFolderTitle] = useState(""); // 폴더 이름
     const [selectedItems, setSelectedItems] = useState([]);
+    const loginUserId = localStorage.getItem("userId"); //
+
 
     // 파일 선택했을 때 실행하는 함수
     const handleImageChange = (e) => {
@@ -43,12 +45,28 @@ const BookmarkPlayedNewFolder = () => {
 
     // 파일 저장
     const handleSaveFolder = async () => {
-    const idsOnly = selectedItems.map(item => item._id || item.id);
+    // const idsOnly = selectedItems.map(item => item._id || item.id);
+    const idsOnly = selectedItems.map(item => {
+    if (item && item._id) return item._id;
+    if (item && item.id) return item.id;
+    return null;
+    }).filter(id => id); 
     const formData = new FormData();
+
+    console.log("selectedItems 내용 확인:", selectedItems);
+
+    // 🔽 [콘솔 로그] 여기 추가
+    console.log("✅ 저장 시도 중");
+    console.log("title:", folderTitle);
+    console.log("userId:", loginUserId);
+    console.log("selectedIds:", idsOnly);
+    console.log("thumbnail:", thumbnail);
+
     formData.append("title", folderTitle); // ✅ 폴더 제목
     formData.append("thumbnail", thumbnail); // ✅ 썸네일 이미지
-    // formData.append("selectedIds", JSON.stringify(selectedItems)); // ✅ 선택한 ID 목록
     formData.append("selectedIds", JSON.stringify(idsOnly));
+    formData.append("userId", loginUserId);
+    // formData.append("selectedIds", JSON.stringify(selectedItems));
 
     // ✅ validation: 제목이 비었는지 확인
     if (!folderTitle.trim()) {

@@ -15,7 +15,12 @@ const CommunityCollection = () => {
       try {
         const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/playList/folders`);
         const data = await res.json();
-        const onlyPlayed = data.filter(item => item.type === "곡");
+        const onlyPlayed = data
+          .filter(item => item.type === "곡")
+          .sort((a, b) => b.likeCount - a.likeCount) // 좋아요 순 정렬
+          .slice(0, 5); // 상위 5개만
+        setPlayedFolders(onlyPlayed);
+        // const onlyPlayed = data.filter(item => item.type === "곡");
         setPlayedFolders(onlyPlayed);
       } catch (err) {
         console.error("Played 폴더 불러오기 실패:", err);
@@ -29,12 +34,14 @@ const CommunityCollection = () => {
   useEffect(() => {
     const fetchFolders = async () => {
       try {
-        const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/bookmarks/folders`);
+        const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/bookmarkFolder/folders`);
         const data = await res.json();
-
-        const onlyTyped = data.filter(item => item.type === "글");
-        const onlyPlayed = data.filter(item => item.type === "곡");
-
+        const onlyTyped = data
+          .filter(item => item.type === "글")
+          .sort((a, b) => b.likeCount - a.likeCount) // 좋아요 수 내림차순
+          .slice(0, 5); // 상위 5개만
+        setTypedFolders(onlyTyped);
+        // const onlyTyped = data.filter(item => item.type === "글");
         setTypedFolders(onlyTyped);
       } catch (err) {
         console.error("폴더 불러오기 실패:", err);
@@ -73,6 +80,7 @@ const CommunityCollection = () => {
                       </S.Menu>
                     )}
                   </S.Wrapper>
+                  <S.LikeCount><p className='likeCount'>좋아요 수</p></S.LikeCount>
                 </S.dd>
               </S.LetterBox>
             </S.TypedBox>
@@ -104,6 +112,7 @@ const CommunityCollection = () => {
                       </S.Menu>
                     )}
                   </S.Wrapper>
+                  <S.LikeCount><p className='likeCount'>{folder.likeCount} 좋아요</p></S.LikeCount>
                 </S.dd>
               </S.LetterBox>
             </S.TypedBox>

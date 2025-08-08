@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import S from './CollectionDetailStyle';
+import { useLocation } from 'react-router-dom';
 
   const dummyData = [
     {
@@ -43,6 +44,7 @@ const CollectionDetail = () => {
   const [editMode, setEditMode] = useState(false); // 편집 모드 on/off
   const [selectedItems, setSelectedItems] = useState([]); // 선택된 항목 id 배열
   const [bookmarkData, setBookmarkData] = useState(dummyData);
+  const { state: folder } = useLocation();
 
   return (
     <div>
@@ -71,10 +73,18 @@ const CollectionDetail = () => {
       </S.HeaderWrap>
       <S.BodyWrap>
         <S.BookBox>
-          <img src="/assets/images/profiles/cat.JPG" alt="" />
+          <img 
+            src={
+              folder?.thumbnailUrl
+                ? `${process.env.REACT_APP_BACKEND_URL}${folder.thumbnailUrl}`
+                : "/assets/images/profiles/default-thumbnail.png"
+            }
+            alt={folder?.title || "썸네일"}
+            className="thumbnail"
+          />
           <S.BookInfo>
             <div id='title'>
-              <h4>폴더 이름</h4>
+              <h4>{folder?.title || "폴더 이름 없음"}</h4>
               <p>닉네임</p>
             </div>
             <div id='imgEditBox'>

@@ -167,7 +167,7 @@ import Search from "../pages/auth/Search";
             element: <CollectionAllview />,
           },
           {
-            path: "collection/detail", // detail 수정(/:id)
+            path: "collection/detail/:id", // detail 수정(/:id)
             element: <CollectionDetail />,
           },
         ],
