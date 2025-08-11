@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
+import { useSelector } from "react-redux";
 import S from "./bookmark.typed.style";
 import useClickOutside from "../../modules/hooks/useClickOutside";
 import Dropdown from "../../components/dropdown/Dropdown";
@@ -10,34 +11,39 @@ import Toast from "../../components/Toast";
 const BookmarkTyped = () => {
   const [bookmarkItems, setBookmarkItems] = useState([]);
   const [toast, setToast] = useState(null);
-  const { id } = useParams();
+  const { id } = useParams(); // 폴더 ID (없으면 기본 1 사용)
+  const folderId = Number(id) || 1;
+
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   useClickOutside(dropdownRef, () => setDropdownOpen(false));
 
-  const dropdownInfo = dropdownOpen && {
-    x: dropdownOpen.x,
-    y: dropdownOpen.y,
-  };
+  // ✅ 로그인 유저 파생 (slice/키 이름이 달라도 견고)
+  const auth = useSelector((s) => s.user || s.auth || {});
+  const rawUser = auth.user || auth.data || auth.profile || auth.currentUser || null;
+  const userId = rawUser?._id ?? rawUser?.id ?? rawUser?.userId ?? null;
+  const isAuthed = typeof auth.isLoggedIn === "boolean" ? auth.isLoggedIn : Boolean(userId);
+
+  const dropdownInfo = dropdownOpen && { x: dropdownOpen.x, y: dropdownOpen.y };
 
   const handleMoreClick = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    setDropdownOpen({
-      x: rect.left,
-      y: rect.bottom,
-    });
+    setDropdownOpen({ x: rect.left, y: rect.bottom });
   };
 
+  // ✅ 북마크 목록 조회 (로그인 완료 후 진행)
   useEffect(() => {
+    if (!isAuthed || !userId) return;
+
     const fetchBookmarks = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/bookmarks?userId=user1&folderId=1");
+        const res = await fetch(`/api/bookmarks?userId=${userId}&folderId=${folderId}`);
+        if (!res.ok) throw new Error("북마크 조회 실패");
         const data = await res.json();
 
         if (Array.isArray(data)) {
           const likedMusicKeys = JSON.parse(localStorage.getItem("likedMusicIds") || "[]");
-
           const parsed = data.map((item) => {
             const musicKey = `${item.music}___${item.artist}`;
             return {
@@ -46,7 +52,6 @@ const BookmarkTyped = () => {
               liked: likedMusicKeys.includes(musicKey),
             };
           });
-
           setBookmarkItems(parsed);
         } else {
           console.warn("북마크 응답이 배열이 아닙니다:", data);
@@ -58,26 +63,35 @@ const BookmarkTyped = () => {
     };
 
     fetchBookmarks();
-  }, []);
+  }, [isAuthed, userId, folderId]);
 
+  // ✅ 북마크 토글(로그인 필요)
   const handleBookmark = async (item) => {
+    if (!isAuthed || !userId) {
+      setToast("로그인 시 사용 가능한 기능입니다!");
+      setTimeout(() => setToast(null), 2000);
+      return;
+    }
+
     const isBookmarked = item.bookmarked;
 
     try {
       if (isBookmarked) {
-        await fetch("http://localhost:8000/api/bookmarks", {
+        // 삭제
+        await fetch(`/api/bookmarks`, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: "user1", historyId: item._id }),
+          body: JSON.stringify({ userId, historyId: item._id }),
         });
 
         setBookmarkItems((prev) => prev.filter((b) => b._id !== item._id));
         setToast("북마크에서 삭제되었습니다!");
       } else {
-        const res = await fetch("http://localhost:8000/api/bookmarks", {
+        // 추가
+        const res = await fetch(`/api/bookmarks`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: "user1", historyId: item._id, folderId: 1 }),
+          body: JSON.stringify({ userId, historyId: item._id, folderId }),
         });
         const saved = await res.json();
 
@@ -87,7 +101,7 @@ const BookmarkTyped = () => {
             ...item,
             bookmarked: true,
             bookmarkId: saved._id,
-            folderId: 1,
+            folderId,
           },
         ]);
         setToast("북마크에 저장되었습니다!");
@@ -99,14 +113,13 @@ const BookmarkTyped = () => {
     }
   };
 
+  // 음악 좋아요 토글 (LocalStorage 활용)
   const toggleLike = (item) => {
     const musicKey = `${item.music}___${item.artist}`;
     const likedMusics = JSON.parse(localStorage.getItem("likedMusicIds") || "[]");
-
     const updated = item.liked ? likedMusics.filter((k) => k !== musicKey) : [...likedMusics, musicKey];
 
     localStorage.setItem("likedMusicIds", JSON.stringify(updated));
-
     setBookmarkItems((prev) => prev.map((el) => (el._id === item._id ? { ...el, liked: !item.liked } : el)));
   };
 
@@ -116,9 +129,7 @@ const BookmarkTyped = () => {
     else handleCardSelect(item._id);
   };
 
-  const handleClose = () => {
-    setSelectedCard(null);
-  };
+  const handleClose = () => setSelectedCard(null);
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -135,23 +146,28 @@ const BookmarkTyped = () => {
 
   const handleCardSelect = (id) => {
     if (!isEditMode) return;
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
   };
 
+  // ✅ 선택 삭제(로그인 필요)
   const handleDeleteSelected = async () => {
+    if (!isAuthed || !userId) {
+      setToast("로그인 시 사용 가능한 기능입니다!");
+      setTimeout(() => setToast(null), 2000);
+      return;
+    }
+
     try {
-      // 1. 서버에 삭제 요청 보내기
       await Promise.all(
-        selectedIds.map((id) =>
-          fetch("http://localhost:8000/api/bookmarks", {
+        selectedIds.map((historyId) =>
+          fetch(`/api/bookmarks`, {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: "user1", historyId: id }),
+            body: JSON.stringify({ userId, historyId }),
           })
         )
       );
 
-      // 2. 클라이언트 상태 업데이트
       const newItems = bookmarkItems.filter((item) => !selectedIds.includes(item._id));
       setBookmarkItems(newItems);
       setSelectedIds([]);
@@ -164,23 +180,26 @@ const BookmarkTyped = () => {
     }
   };
 
-  // 삭제
+  // ✅ 단일 삭제(로그인 필요)
   const handleDeleteSingle = async (item) => {
+    if (!isAuthed || !userId) {
+      setToast("로그인 시 사용 가능한 기능입니다!");
+      setTimeout(() => setToast(null), 2000);
+      return;
+    }
+
     try {
-      await fetch("http://localhost:8000/api/bookmarks", {
+      await fetch(`/api/bookmarks`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: "user1", historyId: item._id }),
+        body: JSON.stringify({ userId, historyId: item._id }),
       });
 
       setBookmarkItems((prev) => prev.filter((b) => b._id !== item._id));
       setToast("북마크에서 삭제되었습니다!");
       setTimeout(() => setToast(null), 2000);
 
-      // 선택된 카드 닫기
-      if (selectedCard && selectedCard._id === item._id) {
-        setSelectedCard(null);
-      }
+      if (selectedCard && selectedCard._id === item._id) setSelectedCard(null);
     } catch (err) {
       console.error("북마크 삭제 실패:", err);
       setToast("삭제 중 오류 발생");
@@ -244,7 +263,7 @@ const BookmarkTyped = () => {
               onToggleBookmark={() => handleBookmark(item)}
               onToggleLike={() => toggleLike(item)}
               onClick={() => handleCardClick(item)}
-              onDelete={() => handleDeleteSingle(item)} // 🔥 추가
+              onDelete={() => handleDeleteSingle(item)}
               isEditMode={isEditMode}
               selected={selectedIds.includes(item._id)}
             />
