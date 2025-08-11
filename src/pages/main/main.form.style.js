@@ -322,13 +322,21 @@ M.Album = styled.div`
 M.AlbumInfo = styled.div`
   ${justifyContentStart}
   gap: 8px;
+  h5 {
+    font-size: 18px;
+    color: #282828;
+  }
+  h6 {
+    font-size: 16px;
+    color: #787878;
+  }
 `;
 
 M.AlbumImg = styled.img`
   width: 39px;
   height: 39px;
   border-radius: 1px;
-  border: 0.5px #787878 solid;
+  border: 0.1px #787878 solid;
 `;
 
 M.PlayListIconWrap = styled.div`
@@ -356,6 +364,9 @@ M.PlayListWrap = styled.div`
   ${justifyContentCenter}
   background: none;
   gap: 6px;
+  h4 {
+    font-size: 17px;
+  }
 `;
 
 M.ReplayBookIconWrap = styled.div`
@@ -378,6 +389,10 @@ M.ReplayBtn = styled.button`
 M.BookmarkInfoWrap = styled.div`
   ${justifyContentCenter}
   gap: 10px;
+  h5 {
+    font-size: 16px;
+    color: #787878;
+  }
 `;
 
 M.BookInfoWrapper = styled.div`
@@ -385,6 +400,9 @@ M.BookInfoWrapper = styled.div`
   justify-content: flex-start;
   align-items: flex-start;
   display: inline-flex;
+  h4 {
+    font-size: 18px;
+  }
 `;
 
 M.BookInfoWrap = styled.div`

@@ -2,13 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import P from './main.playlist.popup.style';
 
 const MainPlaylistPopup = ({ onClose, data }) => {
-    // 좋아요 상태
   const [playlist, setPlaylist] = useState(data);
-  // const toggleLike = (index) => {
-  //   const updated = [...playlist];
-  //   updated[index].liked = !updated[index].liked;
-  //   setPlaylist(updated);
-  // };
   const toggleLike = async (index) => {
   const updated = [...playlist];
   updated[index].liked = !updated[index].liked;
@@ -18,7 +12,7 @@ const MainPlaylistPopup = ({ onClose, data }) => {
 
   try {
     if (liked) {
-      // ❤️ 저장 요청
+      // 저장 요청
       await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/playlist/liked`, {
         method: "POST",
         headers: {
@@ -28,7 +22,7 @@ const MainPlaylistPopup = ({ onClose, data }) => {
       });
       console.log("좋아요 저장됨:", title);
     } else {
-      // ❤️ 취소 → 서버에서 삭제하거나 무시 (옵션)
+      // 취소 → 서버에서 삭제하거나 무시 (옵션)
       await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/playlist/unlike`, {
         method: "POST", // 혹은 DELETE
         headers: {

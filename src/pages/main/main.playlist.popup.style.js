@@ -66,8 +66,8 @@ P.ArtistWrap = styled.div`
     height: 48px;
     aspect-ratio: 1 / 1;
     object-fit: cover;
-    border-radius: 5px;
-    border: 0.5px solid #000;
+    border-radius: 4px;
+    border: 0.1px solid #000;
     flex-shrink: 0; 
   }
 `;
