@@ -6,7 +6,6 @@ import MainPopup from "./MainPopup";
 import MainPlaylistPopup from "./MainPlaylistPopup";
 import Toast from "../../components/Toast";
 import { fetchRecommendedMusic } from "../../api/musicApi";
-// import { parse } from "@fortawesome/fontawesome-svg-core"; // 미사용 시 제거
 
 const MainContainer = ({ isUpdate, setIsUpdate }) => {
   const [toast, setToast] = useState(null); // 토스트
@@ -27,7 +26,6 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
 
   const folderId = 1;
 
-  // ✅ 로그인 상태를 견고하게 계산 (slice/키 이름이 달라도 동작)
   const auth = useSelector((s) => s.user || s.auth || {});
   const rawUser = auth.user || auth.data || auth.profile || auth.currentUser || null;
   const userId = rawUser?._id ?? rawUser?.id ?? rawUser?.userId ?? null;
@@ -63,7 +61,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
 
   // 플레이리스트
   const [showPlaylist, setShowPlaylist] = useState(false);
-  const [currentSong, setCurrentSong] = useState(null); // ✅ 초기값 null로 (배열 아님)
+  const [currentSong, setCurrentSong] = useState(null); 
   const [musicList, setMusicList] = useState([]);
 
   const fetchRandomScript = async () => {
@@ -97,7 +95,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
         const isDefault = img === DEFAULT_LASTFM_IMAGE;
 
         return {
-          img: isDefault ? "/assets/images/album_cover/smiley.ori.jpg" : img,
+          img: isDefault ? "/assets/images/album_cover/defaultAlbumCover.jpg" : img,
           title: track.name,
           artist: track.artist,
           liked: false,
@@ -105,7 +103,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
       });
 
       setMusicList(parsed);
-      setCurrentSong(parsed[0] || null); // ✅ 안전
+      setCurrentSong(parsed[0] || null); 
 
       setInputValue("");
       setFade(true);
@@ -154,7 +152,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
     }
 
     const historyData = {
-      userId, // ✅ 로그인한 사용자
+      userId, 
       content: inputValue,
       book: currentData.title,
       author: currentData.author,
@@ -164,7 +162,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
       music: currentSong?.title || "",
       artist: currentSong?.artist || "",
       keyword: selectedKeywords,
-      genre: selectedGenres, // ✅ 배열 유지
+      genre: selectedGenres,
     };
 
     try {
@@ -201,7 +199,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
 
     // 2) 히스토리 저장 payload (userId 포함)
     const historyData = {
-      userId, // ✅ 로그인한 사용자
+      userId, 
       content: inputValue,
       book: currentData.title,
       author: currentData.author,
@@ -260,7 +258,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
           onClose={() => setShowPopup(false)}
           onConfirm={() => {
             setShowPopup(false);
-            navigate(isAuthed ? "/mypage" : "/login"); // ✅ isAuthed 사용
+            navigate(isAuthed ? "/mypage" : "/login"); 
           }}
         />
       )}
@@ -362,8 +360,8 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
                 <M.Album>
                   <M.AlbumImg src={currentSong?.img || ""} />
                   <M.AlbumInfo>
-                    <h5 style={{ color: "#282828" }}>{currentSong?.title || ""}</h5>
-                    <h6 style={{ color: "#787878" }}>{currentSong?.artist || ""}</h6>
+                    <h5>{currentSong?.title || ""}</h5>
+                    <h6>{currentSong?.artist || ""}</h6>
                   </M.AlbumInfo>
                 </M.Album>
               </M.StyledMusic>
@@ -417,7 +415,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
                   <M.BookInfoWrapper>
                     <h4>{currentData?.title ?? "-"}</h4>
                     <M.BookInfoWrap>
-                      <h5 style={{ color: "#787878" }}>{currentData?.author ?? "-"}</h5>
+                      <h5>{currentData?.author ?? "-"}</h5>
                       {/* <small style={{ color: "#787878" }}>{currentData?.publisher ?? "-"}</small> */}
                     </M.BookInfoWrap>
                   </M.BookInfoWrapper>

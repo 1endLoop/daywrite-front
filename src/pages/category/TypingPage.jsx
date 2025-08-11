@@ -28,7 +28,7 @@ const TypingPage = () => {
 
   const navigate = useNavigate();
 
-  // 🔐 로그인 상태 파생 (slice/키 이름 달라도 견고)
+  // 로그인 상태 파생 (slice/키 이름 달라도 견고)
   const auth = useSelector((s) => s.user || s.auth || {});
   const rawUser = auth.user || auth.data || auth.profile || auth.currentUser || null;
   const userId = rawUser?._id ?? rawUser?.id ?? rawUser?.userId ?? null;
@@ -116,7 +116,7 @@ const TypingPage = () => {
     setShowPopup(true);
   };
 
-  // ⭐ 북마크 토글 (히스토리 저장 후 북마크 저장) — 로그인 필요
+  // 북마크 토글 (히스토리 저장 후 북마크 저장) — 로그인 필요
   const handleBookmarkToggle = async () => {
     if (!isAuthed || !userId) {
       alert("로그인 시 사용 가능한 기능입니다!");
@@ -138,7 +138,7 @@ const TypingPage = () => {
         publishedDate: writingData.publishedDate ?? "unknown",
         bookCover: writingData.bookCover ?? "",
         keyword: selectedKeywords,
-        genre: selectedGenres, // ✅ 배열 유지
+        genre: selectedGenres, //배열 유지
         music: currentSong?.title ?? "",
         artist: currentSong?.artist ?? "",
         mood: selectedMood,
@@ -377,7 +377,7 @@ const TypingPage = () => {
                         publishedDate: writingData.publishedDate ?? "unknown",
                         bookCover: writingData.bookCover ?? "",
                         keyword: selectedKeywords,
-                        genre: selectedGenres, // ✅ 배열 유지
+                        genre: selectedGenres, 
                         music: currentSong?.title || "",
                         artist: currentSong?.artist || "",
                         mood: mood?.color || mood || "#FFFFFF",
