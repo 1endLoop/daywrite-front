@@ -125,21 +125,45 @@ const LoginForm = () => {
 
           return res.json();
         })
-
-        .then((res) => {
+          // 토큰이나 유저가 오면 무조건 로그인 성공으로 처리...
+        .then(async (res) => {
           console.log(res);
-          
-          // 성공했다면
-          const {currentUser, isLogin } = res;
-          // 로그인을 완료한 유저의 상태를 리덕스에 저장하는 코드
-          if (res.accessToken) {
-            localStorage.setItem("jwtToken", res.accessToken);
+
+          // 1) 응답에서 user/토큰 확보 (백엔드 키 변화에 대응)
+          const user  = res.user ?? res.currentUser ?? null;
+          const token = res.accessToken ?? res.token ?? res.jwt ?? null;
+
+          // 2) 토큰 저장
+          if (token) localStorage.setItem("jwtToken", token);
+
+          // 3) 로그인 직후 '상세 유저' 정보를 보강해서 곧바로 마이페이지에 반영되도록
+          let finalUser = user;
+          try {
+            // user가 없거나(얕은 정보) 보강이 필요하면 me(just-verified) 호출
+            if (token) {
+              const meRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/auth/jwt`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (meRes.ok) {
+                const me = await meRes.json();                 // { user: {...} } 형태 가정
+                finalUser = me?.user ?? finalUser ?? null;
+              }
+            }
+          } catch (e) {
+            // me 호출 실패 시, 최소 user만 유지
+            console.warn("Failed to fetch me:", e);
           }
 
-          dispatch(setUser(currentUser));
-          dispatch(setUserStatus(isLogin));
+          // 4) 전역 상태 업데이트 (즉시 헤더가 'logout'으로 바뀌도록)
+          dispatch(setUser(finalUser));
+          dispatch(setUserStatus(Boolean(finalUser || token)));
+
+          // 5) 이동
           navigate("/");
         })
+
+
         .catch(console.log);
 
       })}>
