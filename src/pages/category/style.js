@@ -12,13 +12,13 @@ S.Container = styled.div`
 
 // 배경 이미지 (고정)
 S.Background = styled.div`
-  position: absolute;
+  position: fixed;        /* 스크롤과 무관하게 고정 */
   inset: 0;
-  background-image: url('/assets/images/background/snow.jpg');
+  background-image: url(${p => p.$bg || '/assets/images/background/snow.jpg'}); /* ← 변경 포인트 */
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
-  z-index: 0;
+  z-index: -1;            /* 내용/헤더 뒤로 보내기 */
 `;
 
 // 고정 헤더

@@ -3,6 +3,7 @@
   import Main from "../pages/main/Main";
   import NotFound from "../pages/not_found/NotFound";
   import Layout from "../pages/layout/Layout";
+  import ProtectedRoute from "../components/ProtectedRoute";
 
   // Auth
   import Auth from "../pages/auth/Auth";
@@ -184,7 +185,11 @@ import Search from "../pages/auth/Search";
         // 마이페이지
         {
           path: "mypage",
-          element: <MyPageContainer />,
+          element: (
+            <ProtectedRoute>
+              <MyPageContainer />
+            </ProtectedRoute>
+          ),
           children: [
             {
               index: true,
