@@ -3,34 +3,59 @@ import HistoryCard from "./HistoryCard";
 import HistoryDetail from "./HistoryDetail";
 import { useState, useEffect } from "react";
 import Toast from "../../components/Toast";
+import { useSelector } from "react-redux";
 
 const HistoryList = () => {
   const [historyList, setHistoryList] = useState([]);
   const [selectedCard, setSelectedCard] = useState(null);
   const [toast, setToast] = useState(null);
 
-  const USER_ID = "user1";
+  // 로그인 유저
+  const auth = useSelector((s) => s.user || s.auth || {});
+  const rawUser = auth.user || auth.data || auth.profile || auth.currentUser || null;
+  const userId = rawUser?._id ?? rawUser?.id ?? rawUser?.userId ?? null;
+  const isAuthed = typeof auth.isLoggedIn === "boolean" ? auth.isLoggedIn : Boolean(userId);
 
   // ✅ 데이터 가져오기
   useEffect(() => {
+    if (!isAuthed || !userId) return; // 로그인 준비되면 호출
+
     const fetchData = async () => {
       try {
-        // 1. 모든 history 불러오기
-        const historyRes = await fetch("http://localhost:8000/api/history");
-        const histories = await historyRes.json();
+        // 1) 사용자 히스토리 조회 (백엔드 라우트: GET /api/history/user/:userId)
+        const historyRes = await fetch(`/api/history/user/${userId}`);
+        if (!historyRes.ok) throw new Error("히스토리 조회 실패");
+        const histories = await historyRes.json(); // [{ _id, userId, ... }]
 
-        // 2. 북마크 목록 불러오기
-        const bookmarkRes = await fetch(`http://localhost:8000/api/bookmarks?userId=${USER_ID}`);
-        const bookmarks = await bookmarkRes.json(); // [{ _id, ...history, bookmarkId }]
-        const bookmarkedIds = bookmarks.map((item) => item._id); // history._id 기준
+        // 2) 사용자 북마크 조회 (백엔드 구현에 따라 다를 수 있음)
+        //    - Case A: [{ _id: bookmarkId, userId, historyId }]
+        //    - Case B: [{ _id: bookmarkId, ...historyFields, bookmarkId }]
+        const bookmarkRes = await fetch(`/api/bookmarks?userId=${userId}`);
+        let bookmarks = [];
+        if (bookmarkRes.ok) {
+          bookmarks = await bookmarkRes.json();
+        }
 
+        // 북마크된 히스토리 _id 집합 만들기
+        // A: historyId만 존재
+        const idsFromHistoryId = new Set(bookmarks.filter((b) => b.historyId).map((b) => String(b.historyId)));
+
+        // B: 조인되어 history 자체의 _id가 들어온 경우(주석처럼 서버가 돌려주는 형태)
+        const idsFromJoined = new Set(
+          bookmarks
+            .filter((b) => b._id && !b.historyId) // 주: 서버 설계에 따라 조건 조정
+            .map((b) => String(b._id))
+        );
+
+        // 로컬 음악 좋아요 키
         const likedMusicKeys = JSON.parse(localStorage.getItem("likedMusicIds") || "[]");
 
         const merged = histories.map((item) => {
           const key = `${item.music}___${item.artist}`;
+          const isBookmarked = idsFromHistoryId.has(String(item._id)) || idsFromJoined.has(String(item._id));
           return {
             ...item,
-            bookmarked: bookmarkedIds.includes(item._id),
+            bookmarked: isBookmarked,
             liked: likedMusicKeys.includes(key),
           };
         });
@@ -42,28 +67,32 @@ const HistoryList = () => {
     };
 
     fetchData();
-  }, []);
+  }, [isAuthed, userId]);
 
   // ✅ 북마크 토글
   const toggleBookmark = async (item) => {
+    if (!isAuthed || !userId) {
+      setToast("로그인 시 사용 가능한 기능입니다!");
+      setTimeout(() => setToast(null), 2000);
+      return;
+    }
+
     const isBookmarked = item.bookmarked;
-    const url = "http://localhost:8000/api/bookmarks";
+    const url = `/api/bookmarks`;
 
     try {
       if (isBookmarked) {
         await fetch(url, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: USER_ID, historyId: item._id }),
+          body: JSON.stringify({ userId, historyId: item._id }),
         });
-        setToast("북마크에서 삭제되었습니다!");
       } else {
         await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: USER_ID, historyId: item._id, folderId: 1 }),
+          body: JSON.stringify({ userId, historyId: item._id, folderId: 1 }),
         });
-        setToast("북마크에 저장되었습니다!");
       }
 
       // 상태 업데이트
@@ -135,7 +164,7 @@ const HistoryList = () => {
             onClick={() => setSelectedCard(item)}
             onToggleBookmark={() => toggleBookmark(item)}
             onToggleLike={() => toggleMusicLike(item)}
-            onDelete={() => deleteHistory(item)} // 🔥 추가
+            onDelete={() => deleteHistory(item)}
             selected={false}
             isEditMode={false}
           />
