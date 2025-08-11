@@ -23,15 +23,19 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
   const navigate = useNavigate();
   const [showPopup, setShowPopup] = useState(false);
   const [popupType, setPopupType] = useState("");
-  const isLoggedIn = false;
+  const isLoggedIn = localStorage.getItem("jwtToken") !== null;
 
   const handlePlayToggle = () => {
     setIsPlaying((prev) => !prev);
   };
 
   const handleSettingClick = () => {
-    setPopupType(isLoggedIn ? "member" : "guest");
-    setShowPopup(true);
+    if (isLoggedIn) {
+      navigate("/mypage/typing-setting");
+    } else {
+      setPopupType("guest");
+      setShowPopup(true);
+    }
   };
 
   //fontsize, fontweight
@@ -70,7 +74,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
 
       const keywords = data.keyword ?? [];
       const genres = data.genre ?? [];
-  
+
 
       setCurrentData({
         typing: data.content,
@@ -255,10 +259,11 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
           onClose={() => setShowPopup(false)}
           onConfirm={() => {
             setShowPopup(false);
-            navigate(isLoggedIn ? "/mypage" : "/login");
+            navigate("/login");
           }}
         />
       )}
+
 
       {showPlaylist && <MainPlaylistPopup onClose={() => setShowPlaylist(false)} data={musicList} />}
       
@@ -358,8 +363,8 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
                 <M.Album>
                   <M.AlbumImg src={currentSong.img} />
                   <M.AlbumInfo>
-                    <h5 style={{ color: "#282828" }}>{currentSong.title}</h5>
-                    <h6 style={{ color: "#787878" }}>{currentSong.artist}</h6>
+                    <h4 style={{ color: "#282828" }}>{currentSong.title}</h4>
+                    <h5 style={{ color: "#787878" }}>{currentSong.artist}</h5>
                   </M.AlbumInfo>
                 </M.Album>
               </M.StyledMusic>
@@ -415,7 +420,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
                   <M.BookInfoWrapper>
                     <h4>{currentData?.title ?? "-"}</h4>
                     <M.BookInfoWrap>
-                      <h5>{currentData?.author ?? "-"}</h5>
+                      <h5 style={{ color: "#787878" }}>{currentData?.author ?? "-"}</h5>
                       {/* <small style={{ color: "#787878" }}>{currentData?.publisher ?? "-"}</small> */}
                     </M.BookInfoWrap>
                   </M.BookInfoWrapper>
