@@ -16,8 +16,8 @@ const HistoryCard = ({ data, onClick, onToggleBookmark, onToggleLike, isEditMode
   const dropdownRef = useRef(null);
   useClickOutside(dropdownRef, () => setOpenDropdown(false));
 
-  return (
-    <Card.Card onClick={onClick} selected={isEditMode && selected} isEditMode={isEditMode}>
+  return (  // selected={isEditMode && selected}
+    <Card.Card onClick={onClick} selected={selected} isEditMode={isEditMode}>
       <Card.Header>
         <Card.Date>{formattedDate}</Card.Date>
         <Dropdown.Wrapper ref={dropdownRef} onClick={(e) => e.stopPropagation()}>

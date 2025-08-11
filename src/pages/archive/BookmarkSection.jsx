@@ -75,6 +75,8 @@ const BookmarkSection = ({ title, type }) => {
       return { ...f, count };
     });
 
+
+
   // ✅ 드롭다운 위치
   const handleMoreClick = (e, item) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -97,11 +99,27 @@ const BookmarkSection = ({ title, type }) => {
     return () => el.removeEventListener("scroll", handleScrollVisibility);
   }, []);
 
+  // // newFolder 저장한 값 보여주기
+  // useEffect(() => {
+  //   const fetchFolders = async () => {
+  //     try {
+  //       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/bookmarkFolder/folders`);
+  //       const data = await res.json();
+  //       console.log("✅ folders API 응답:", data);
+  //       setFolders(data);
+  //     } catch (err) {
+  //       console.error("폴더 목록 불러오기 실패:", err);
+  //     }
+  //   };
+
+  //   fetchFolders();
+  // }, []);
+
   return (
     <S.Section>
       <S.TitleRow>
         <S.Title>{title}</S.Title>
-        <S.BookmarkFolder>+폴더 생성</S.BookmarkFolder>
+        <S.BookmarkFolder onClick={() => navigate(`/archive/bookmark/bookmarkNewFolder`)}>+폴더 생성</S.BookmarkFolder>
         <S.ViewAll onClick={() => navigate(`/archive/bookmark/${type === "글" ? "typed" : "played"}`)}>
           전체보기
         </S.ViewAll>
@@ -111,14 +129,32 @@ const BookmarkSection = ({ title, type }) => {
         {showLeftBtn && <S.ScrollLeftBtn onClick={() => scroll("left")}>{"<"}</S.ScrollLeftBtn>}
 
         <S.CardRow ref={scrollRef}>
-          {folderCards.map((item) => (
+          {folderCards.map((forlder) => (
+            // <BookmarkCard
+            //   key={item.id}
+            //   {...item}
+            //   onMoreClick={(e) => handleMoreClick(e, item)}
+            //   onClick={() => navigate(`/archive/bookmark/${type === "글" ? "typed" : "played"}/${item.id}`)}
+            // />
+            <BookmarkCard
+              key={forlder.id}
+              title={forlder.title}
+              type={forlder.type}
+              // imageUrl={`${process.env.REACT_APP_BACKEND_URL}/uploads/${item.thumbnailUrl}`} // 여기 중요!
+              imageUrl={forlder.imageUrl}
+              count={forlder.count}
+              onMoreClick={(e) => handleMoreClick(e, forlder)}
+              onClick={() => navigate(`/archive/bookmark/${type === "글" ? "typed" : "played"}/${forlder.id}`)}
+            />
+          ))}
+          {/* {folderCards.map((item) => (
             <BookmarkCard
               key={item.id}
               {...item}
               onMoreClick={(e) => handleMoreClick(e, item)}
               onClick={() => navigate(`/archive/bookmark/${type === "글" ? "typed" : "played"}/${item.id}`)}
             />
-          ))}
+          ))} */}
         </S.CardRow>
 
         {showRightBtn && <S.ScrollRightBtn onClick={() => scroll("right")}>{">"}</S.ScrollRightBtn>}
