@@ -40,7 +40,7 @@ S.TypedBox = styled.div`
 `
 // Typed 제목, ...
 S.LetterBox = styled.div`
-    border: solid 1px yellow;
+    /* border: solid 1px yellow; */
     width: 100%;
     height: 50px;
     justify-content: space-between;
