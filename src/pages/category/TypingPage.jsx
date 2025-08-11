@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import axios from "axios";
 import M from "./typing.page.style";
 import MainPopup from "../main/MainPopup";
@@ -26,29 +27,32 @@ const TypingPage = () => {
   const [toast, setToast] = useState(null);
 
   const navigate = useNavigate();
-  const isLoggedIn = false;
+
+  // 🔐 로그인 상태 파생 (slice/키 이름 달라도 견고)
+  const auth = useSelector((s) => s.user || s.auth || {});
+  const rawUser = auth.user || auth.data || auth.profile || auth.currentUser || null;
+  const userId = rawUser?._id ?? rawUser?.id ?? rawUser?.userId ?? null;
+  const isAuthed = typeof auth.isLoggedIn === "boolean" ? auth.isLoggedIn : Boolean(userId);
+
+  // 폴더 기본값 (필요시 UI에서 선택으로 확장 가능)
+  const folderId = 1;
 
   const location = useLocation();
   const { keywords = [], genres = [] } = location.state || {};
   const [selectedKeywords, setSelectedKeywords] = useState(keywords);
   const [selectedGenres, setSelectedGenres] = useState(genres);
 
-  // 추천 음악 리스트
-
+  // 추천 음악
   const [musicList, setMusicList] = useState([]);
   const [currentSong, setCurrentSong] = useState(null);
 
-  // 글 데이터 가져오기 함수
+  // 글 + 음악 가져오기
   const fetchWriting = async () => {
     try {
-      console.log("요청 중:", selectedKeywords, selectedGenres);
-
       const res = await axios.post("/api/writing/random", {
         keywords: selectedKeywords,
         genres: selectedGenres,
       });
-
-      console.log("응답데이터:", res.data);
 
       if (!res?.data) {
         alert("조건에 맞는 글이 없습니다.");
@@ -57,48 +61,40 @@ const TypingPage = () => {
 
       setWritingData(res.data);
 
-    // 음악 API도 같은 함수 내에서 호출
-    const music = await fetchRecommendedMusic(selectedKeywords, selectedGenres);
+      // 음악 API
+      const music = await fetchRecommendedMusic(selectedKeywords, selectedGenres);
+      const DEFAULT_LASTFM_IMAGE = "https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png";
 
-    const DEFAULT_LASTFM_IMAGE ="https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png";
+      const parsed = music.map((track) => {
+        const img = track.image?.[3]?.["#text"];
+        const isDefault = img === DEFAULT_LASTFM_IMAGE;
+        return {
+          img: isDefault ? "/assets/images/album_cover/smiley.ori.jpg" : img, // ✅ 로컬 퍼블릭 경로
+          title: track.name,
+          artist: track.artist,
+          liked: false,
+        };
+      });
 
-    const parsed = music.map((track) => {
-      const img = track.image?.[3]?.['#text']
-      const isDefault = img === DEFAULT_LASTFM_IMAGE
-
-      return {
-        img: isDefault ? "C:\daywrite-front\public\assets\images\album_cover\smiley.ori.jpg" : img,
-        title: track.name,
-        artist: track.artist,
-        liked: false,
-      }
-    })
-
-
-    setMusicList(parsed);
-    setCurrentSong(parsed[0]); // 첫 곡을 현재 곡으로 설정
-    console.log("추천음악:", music)
-
+      setMusicList(parsed);
+      setCurrentSong(parsed[0] || null);
+      setFade(true);
     } catch (error) {
-      console.error("글 불러오기 실패:", error);
+      console.error("글/음악 불러오기 실패:", error);
     }
   };
 
-
   useEffect(() => {
     fetchWriting();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedKeywords, selectedGenres]);
 
-  if (!writingData) {
-    console.log("아직 데이터 없음");
-    return <p>로딩 중...</p>;
-  }
-  console.log("WritingData 있음!! : ", writingData);
+  if (!writingData) return <p>로딩 중...</p>;
 
+  // 진행률 계산
   const current = inputValue.length;
   const total = writingData.content.length;
   const percent = Math.floor((current / total) * 100);
-
   const totalWidth = 1126;
   const tickWidth = 1.5;
   const pointWidth = 7;
@@ -116,19 +112,25 @@ const TypingPage = () => {
     }
   };
   const handleSettingClick = () => {
-    setPopupType(isLoggedIn ? "member" : "guest");
+    setPopupType(isAuthed ? "member" : "guest");
     setShowPopup(true);
   };
 
-  // 북마크
+  // ⭐ 북마크 토글 (히스토리 저장 후 북마크 저장) — 로그인 필요
   const handleBookmarkToggle = async () => {
+    if (!isAuthed || !userId) {
+      alert("로그인 시 사용 가능한 기능입니다!");
+      return;
+    }
     if (!writingData || inputValue.trim() === "") {
       alert("먼저 필사를 완료해주세요!");
       return;
     }
 
     try {
+      // 1) 히스토리 저장 (userId + 배열 형태의 genre)
       const historyData = {
+        userId,
         content: inputValue,
         book: writingData.book,
         author: writingData.author,
@@ -136,50 +138,43 @@ const TypingPage = () => {
         publishedDate: writingData.publishedDate ?? "unknown",
         bookCover: writingData.bookCover ?? "",
         keyword: selectedKeywords,
-        genre: selectedGenres[0] ?? "",
+        genre: selectedGenres, // ✅ 배열 유지
         music: currentSong?.title ?? "",
         artist: currentSong?.artist ?? "",
         mood: selectedMood,
       };
 
-      const historyRes = await fetch("http://localhost:8000/api/history", {
+      const historyRes = await fetch("/api/history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(historyData),
       });
-
       const historyJson = await historyRes.json();
       const historyId = historyJson.data?._id;
+      if (!historyRes.ok || !historyId) throw new Error(historyJson?.message || "히스토리 저장 실패");
 
-      if (!historyRes.ok || !historyId) throw new Error("히스토리 저장 실패");
-
+      // 2) 북마크 토글
       if (isBookmarked) {
-        await fetch("http://localhost:8000/api/bookmarks", {
+        await fetch("/api/bookmarks", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: "user1", historyId }),
+          body: JSON.stringify({ userId, historyId }),
         });
-
         setIsBookmarked(false);
         setShowBookmark(false);
         setToast("북마크에서 삭제되었습니다!");
       } else {
-        await fetch("http://localhost:8000/api/bookmarks", {
+        await fetch("/api/bookmarks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: "user1",
-            historyId,
-            folderId: 1,
-          }),
+          body: JSON.stringify({ userId, historyId, folderId }),
         });
-
         setIsBookmarked(true);
         setShowBookmark(true);
         setToast("북마크에 저장되었습니다!");
       }
 
-      setTimeout(() => setToast(null), 2000); // 2초 후 토스트 사라짐
+      setTimeout(() => setToast(null), 2000);
     } catch (err) {
       console.error("북마크 처리 실패:", err);
       alert("에러 발생: " + err.message);
@@ -195,7 +190,7 @@ const TypingPage = () => {
           onClose={() => setShowPopup(false)}
           onConfirm={() => {
             setShowPopup(false);
-            navigate(isLoggedIn ? "/mypage" : "/login");
+            navigate(isAuthed ? "/mypage" : "/login");
           }}
         />
       )}
@@ -300,16 +295,15 @@ const TypingPage = () => {
                       alt="like"
                     />
                   </M.IconButton>
-                {currentSong && (
-                  <M.Album>
-                    <M.AlbumImg src={currentSong.img} />
-                    <M.AlbumInfo>
-                      <h5>{currentSong.title}</h5>
-                      <h6>{currentSong.artist}</h6>
-                    </M.AlbumInfo>
-                  </M.Album>
-
-                )}
+                  {currentSong && (
+                    <M.Album>
+                      <M.AlbumImg src={currentSong.img} />
+                      <M.AlbumInfo>
+                        <h5>{currentSong.title}</h5>
+                        <h6>{currentSong.artist}</h6>
+                      </M.AlbumInfo>
+                    </M.Album>
+                  )}
                 </M.StyledMusic>
                 <M.PlayListIconWrap>
                   <M.PlayIconWrap>
@@ -361,16 +355,21 @@ const TypingPage = () => {
                   </M.SelectedInfoBlock>
                 </M.CategoryInfoWrap>
 
+                {/* 저장(무드 선택) → 로그인 필요 + userId 포함 */}
                 <M.SaveBtn onClick={() => setShowMoodPopup(true)}>저장</M.SaveBtn>
                 {showMoodPopup && (
                   <MoodSelect
                     onClose={() => setShowMoodPopup(false)}
                     onSave={async (mood) => {
-                      setSelectedMood(mood);
+                      if (!isAuthed || !userId) {
+                        alert("로그인 시 사용 가능한 기능입니다!");
+                        return;
+                      }
+                      setSelectedMood(mood?.color || mood || "#FFFFFF");
                       setShowMoodPopup(false);
 
-                      // 히스토리 데이터 구성
                       const historyData = {
+                        userId,
                         content: inputValue,
                         book: writingData.book,
                         author: writingData.author,
@@ -378,27 +377,25 @@ const TypingPage = () => {
                         publishedDate: writingData.publishedDate ?? "unknown",
                         bookCover: writingData.bookCover ?? "",
                         keyword: selectedKeywords,
-                        genre: selectedGenres[0] ?? "",
-                        music: currentSong.title,
-                        artist: currentSong.artist,
-                        mood: mood.color // 선택된 기분
+                        genre: selectedGenres, // ✅ 배열 유지
+                        music: currentSong?.title || "",
+                        artist: currentSong?.artist || "",
+                        mood: mood?.color || mood || "#FFFFFF",
                       };
 
                       try {
-                        const res = await fetch("http://localhost:8000/api/history", {
+                        const res = await fetch("/api/history", {
                           method: "POST",
-                          headers: {
-                            "Content-Type": "application/json",
-                          },
+                          headers: { "Content-Type": "application/json" },
                           body: JSON.stringify(historyData),
                         });
 
                         if (res.ok) {
                           alert("히스토리 저장 완료!");
-                          setInputValue(""); // 입력값 초기화
+                          setInputValue("");
                         } else {
                           const err = await res.json();
-                          alert("저장 실패: " + err.message);
+                          alert("저장 실패: " + (err.message || "서버 오류"));
                         }
                       } catch (err) {
                         console.error("히스토리 저장 실패:", err);

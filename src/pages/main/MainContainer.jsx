@@ -25,6 +25,8 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
   const [showPopup, setShowPopup] = useState(false);
   const [popupType, setPopupType] = useState("");
 
+  const folderId = 1;
+
   // ✅ 로그인 상태를 견고하게 계산 (slice/키 이름이 달라도 동작)
   const auth = useSelector((s) => s.user || s.auth || {});
   const rawUser = auth.user || auth.data || auth.profile || auth.currentUser || null;
@@ -186,14 +188,20 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
   };
 
   // 북마크 핸들러 (히스토리 저장 후 북마크 저장까지 연계)
-  // 👉 북마크는 다음 단계에서 로그인 가드 + userId 반영해줄 예정
   const handleBookmark = async () => {
+    // 1) 로그인/입력 가드
+    if (!isAuthed || !userId) {
+      alert("로그인 시 사용 가능한 기능입니다!");
+      return;
+    }
     if (!currentData || isBookmarked || inputValue.trim() === "") {
       alert("필사 내용을 입력한 후 북마크할 수 있어요!");
       return;
     }
 
+    // 2) 히스토리 저장 payload (userId 포함)
     const historyData = {
+      userId, // ✅ 로그인한 사용자
       content: inputValue,
       book: currentData.title,
       author: currentData.author,
@@ -202,44 +210,37 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
       bookCover: currentData.bookCover ?? "",
       music: currentSong?.title || "",
       artist: currentSong?.artist || "",
+      keyword: selectedKeywords,
+      genre: selectedGenres, // 배열 유지
     };
 
     try {
-      // 1. 히스토리 저장
-      const historyRes = await fetch("http://localhost:8000/api/history", {
+      // 3) 히스토리 저장 (프록시 상대경로)
+      const historyRes = await fetch("/api/history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(historyData),
       });
-
       const historyJson = await historyRes.json();
       const historyId = historyJson.data?._id;
 
       if (!historyRes.ok || !historyId) {
         console.error("히스토리 저장 응답:", historyJson);
-        throw new Error("히스토리 저장 실패");
+        throw new Error(historyJson?.message || "히스토리 저장 실패");
       }
 
-      // 2. 북마크 저장 (임시: userId는 다음 단계에서 실제 로그인 ID로 교체)
-      const bookmarkData = {
-        userId: "user1", // TODO: 다음 단계에서 userId로 교체
-        historyId,
-        folderId: 1,
-      };
-
-      const bookmarkRes = await fetch("http://localhost:8000/api/bookmarks", {
+      // 4) 북마크 저장 (userId로)
+      const bookmarkRes = await fetch("/api/bookmarks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bookmarkData),
+        body: JSON.stringify({ userId, historyId, folderId }),
       });
-
       if (!bookmarkRes.ok) {
         const errorRes = await bookmarkRes.json();
-        console.error("북마크 저장 실패 응답:", errorRes);
         throw new Error(errorRes.message || "북마크 저장 실패");
       }
 
-      // 3. 상태 및 UI 갱신
+      // 5) 상태/UI 갱신
       setIsBookmarked(true);
       setShowBookmark(true);
       setToast("북마크에 저장되었습니다!");
