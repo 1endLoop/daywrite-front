@@ -173,10 +173,6 @@ S.StyledSpan = styled.p`
     word-wrap: break-word;
     background: none;
   }
-
-  &:hover {
-    color: #EB5757;
-  }
 `
 
 // 텍스트필드 타이틀

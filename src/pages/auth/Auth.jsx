@@ -1,13 +1,15 @@
 import React from "react";
-import { useLocation } from "react-router-dom";
 import S from "./style";
 import LoginForm from "./LoginForm";
 import SignUpForm from './SignUpForm';
 import Search from "./Search";
 import Header from "../../components/Header";
+import { useLocation } from "react-router-dom";
+import { useBackground } from "../../contexts/BackgroundContext";
 
 
 const Auth = () => {
+  const { backgroundImage } = useBackground()
   const { pathname } = useLocation();
   const isLoginPage = pathname === "/login";
   const isSignUpPage = pathname === "/signup";
@@ -15,7 +17,7 @@ const Auth = () => {
 
   return (
     <S.Container>
-      <S.Background />
+      <S.Background $bg={backgroundImage || "/assets/images/background/snow.jpg"} />
 
       <Header/>
       

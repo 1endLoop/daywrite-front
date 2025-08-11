@@ -6,7 +6,7 @@ P.PopupContainer = styled.div`
   position: absolute;
   top: 80px;
   right: 30px;
-  width: 400px;
+  width: 350px;
   background: white;
   border: 1px solid #dcdcdc;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
@@ -58,7 +58,7 @@ P.Item = styled.div`
 
 P.ArtistWrap = styled.div`
   display: flex;
-  align-items: flex-start; 
+  align-items: center; 
   gap: 12px;
 
   img {
