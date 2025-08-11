@@ -9,7 +9,7 @@ import Toast from "../../components/Toast";
 
 const SignUpForm = () => {
   const {
-    register, handleSubmit, getValues, setError, clearErrors, watch,
+    register, handleSubmit, getValues, setError, clearErrors, watch, setValue,
     formState: { isSubmitted, errors }
   } = useForm({ mode: "onSubmit" })
 
@@ -26,8 +26,37 @@ const SignUpForm = () => {
   const [generatedCode, setGeneratedCode] = useState(''); // 실제 발송된 인증번호
   const [authVerified, setAuthVerified] = useState(false);
   const [authFailed, setAuthFailed] = useState(false);
+  const [showEmailPopup, setShowEmailPopup] = useState(false); // 이메일 중복확인
+  const [emailToCheck, setEmailToCheck] = useState('');
 
-  const [nicknameChecked, setNicknameChecked] = useState(false);  // 닉네임 중복 확인
+
+  // 닉네임
+  const [nicknameChecked, setNicknameChecked] = useState(false);  // 중복확인
+  const [nicknameAvailable, setNicknameAvailable] = useState(null); // true | false | null
+  const [nicknameToCheck, setNicknameToCheck] = useState('');
+  const [showNicknamePopup, setShowNicknamePopup] = useState(false);
+  const handleCheckNickname = async () => {
+    const nickname = getValues('nickname');
+    if (!nickname) {
+      setError('nickname', { type: 'manual', message: '닉네임을 입력해주세요.' });
+      return;
+    }
+
+    try {
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/users/check-nickname?nickname=${nickname}`);
+      const data = await res.json();
+
+      setNicknameToCheck(nickname);
+      setNicknameAvailable(!data.exists);
+      setShowNicknamePopup(true);
+    } catch (err) {
+      console.error(err);
+      setToast("서버 오류가 발생했습니다.");
+    }
+  };
+
+
+
   const [agreedAll, setAgreedAll] = useState(false);
   const [toast, setToast] = useState(null);  // 토스트 설정
 
@@ -111,13 +140,36 @@ const SignUpForm = () => {
 }, [timerRunning, phoneVerified]);
 
 
-  const handleSendAuthCode = () => {
-    const newCode = '12345';
-    setGeneratedCode(newCode);
-    setAuthSent(true);
-    setAuthVerified(false);
-    setAuthFailed(false);
-    setToast("인증번호가 발송되었습니다. 이메일을 확인해주세요!");
+  const handleSendAuthCode = async () => {
+    const email = getValues('email');
+    if (!email) {
+      setToast("이메일을 입력해주세요.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/users/check-email?email=${email}`);
+      const data = await res.json();
+
+      if (data.exists) {
+        setEmailToCheck(email);
+        setShowEmailPopup(true);
+        return;
+      }
+
+
+      // 중복 이메일이 아니면 바로 인증번호 전송
+      const newCode = '12345';
+      setGeneratedCode(newCode);
+      setAuthSent(true);
+      setAuthVerified(false);
+      setAuthFailed(false);
+      setToast("인증번호가 발송되었습니다. 이메일을 확인해주세요!");
+
+    } catch (err) {
+      console.error(err);
+      setToast("서버 오류가 발생했습니다.");
+    }
   };
 
   const handleVerifyCode = () => {
@@ -127,25 +179,9 @@ const SignUpForm = () => {
     } else {
       setAuthFailed(true);
       setToast("인증번호가 일치하지 않습니다. 다시 인증번호를 발송했으니 이메일을 확인해주세요!");
-      setAuthSent(false); // 다시 전송하도록 초기화
+      setAuthSent(false);
       setAuthCode('');
     }
-  };
-
-  const handleCheckNickname = () => {
-    const nickname = getValues('nickname');
-    if (!nickname) {
-      setError('nickname', { type: 'manual', message: '닉네임을 입력해주세요.' });
-      return;
-    }
-    if (nickname === 'takenName') {
-      setError('nickname', { type: 'manual', message: '닉네임이 이미 사용중입니다.' });
-      setNicknameChecked(false);
-    } else {
-    clearErrors('nickname');
-    setNicknameChecked(true);
-    setToast('사용 가능한 닉네임입니다.');
-  }
   };
 
 
@@ -184,7 +220,6 @@ const isFormValid =
   agreements.terms &&
   agreements.privacy &&
   phoneVerified; // 휴대폰 인증
-
 
 
 // 팝업설정
@@ -232,6 +267,52 @@ const navigate = useNavigate()
           
         />
       )}
+
+    {/* {회원가입시 - 이메일 중복} */}
+    {showEmailPopup && (
+      <AuthPopup
+        title="이미 가입되어있는 이메일 입니다."
+        content={`${emailToCheck}은 이미 가입된 이메일입니다.`}
+        leftbtn="닫기"
+        rightbtn="로그인"
+        showCancel
+        onCancel={() => {
+          setShowEmailPopup(false); // 이메일 입력창 다시 활성화
+        }}
+        onConfirm={() => {
+          setShowEmailPopup(false);
+          navigate('/login'); // 로그인 페이지로 이동
+        }}
+        onClose={() => setShowEmailPopup(false)}
+      />
+    )}
+
+      {/* {회원가입시 - 닉네임 중복확인 팝업} */}
+      {showNicknamePopup && (
+        <AuthPopup
+          title="닉네임 설정"
+          content={
+            nicknameAvailable
+              ? `${nicknameToCheck}은 사용 가능한 닉네임입니다.`
+              : `${nicknameToCheck}은 이미 사용중인 닉네임입니다.`
+          }
+          leftbtn={nicknameAvailable ? "취소" : null}
+          rightbtn={nicknameAvailable ? "사용하기" : "확인"}
+          showCancel={nicknameAvailable}
+          onCancel={() => {
+            setShowNicknamePopup(false);
+          }}
+          onConfirm={() => {
+            if (nicknameAvailable) {
+              clearErrors('nickname');
+              setNicknameChecked(true);
+            }
+            setShowNicknamePopup(false);
+          }}
+          onClose={() => setShowNicknamePopup(false)}
+        />
+      )}
+
 
 
         <S.LoginLeftBox>
