@@ -17,13 +17,18 @@ S.Overlay = styled.div`
 S.Modal = styled.div`
   background: #fff;
   width: 680px;
-  max-height: 80vh;
-  overflow-y: auto;
-  padding: 32px 28px;
   border-radius: 12px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
   position: relative;
-  overflow:scroll;
+  overflow: hidden;
+  background-clip: padding-box;
+  contain: paint; /* 일부 브라우저에서 클리핑 깜빡임 완화 */
+`;
+
+S.Body = styled.div`
+  max-height: 80vh;
+  overflow: auto;
+  padding: 32px 28px;
 `;
 
 S.Header = styled.div`
@@ -62,8 +67,8 @@ S.Divider = styled.hr`
 `;
 
 S.SourceBox = styled.div`
-  display:flex;
-  justify-content:space-between;
+  display: flex;
+  justify-content: space-between;
   font-size: 14px;
   margin-bottom: 20px;
 
@@ -108,7 +113,7 @@ S.Content = styled.p`
   color: #222;
   margin-bottom: 24px;
   white-space: pre-wrap;
-  text-align: justify;  
+  text-align: justify;
 `;
 
 S.MusicSection = styled.div`
@@ -165,6 +170,12 @@ S.MetaSection = styled.div`
   gap: 12px;
 `;
 
+S.Tags = styled.span`
+  margin-left: 6px;
+  color: #888;
+  font-size: 12px;
+`;
+
 S.MetaText = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -176,12 +187,6 @@ S.MetaText = styled.div`
     color: #888;
     font-size: 12px;
   }
-`;
-
-S.Tags = styled.span`
-  margin-left: 6px;
-  color: #888;
-  font-size: 12px;
 `;
 
 S.ReWrite = styled.button`
