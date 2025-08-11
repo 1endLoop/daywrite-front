@@ -75,8 +75,6 @@ const BookmarkSection = ({ title, type }) => {
       return { ...f, count };
     });
 
-
-
   // ✅ 드롭다운 위치
   const handleMoreClick = (e, item) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -119,7 +117,11 @@ const BookmarkSection = ({ title, type }) => {
     <S.Section>
       <S.TitleRow>
         <S.Title>{title}</S.Title>
-        <S.BookmarkFolder onClick={() => navigate(`/archive/bookmark/bookmarkNewFolder`)}>+폴더 생성</S.BookmarkFolder>
+        <S.BookmarkFolder
+          onClick={() => navigate(`/archive/bookmark/${type === "글" ? "bookmarkNewFolder" : "playedNewFolder"}`)}
+        >
+          +폴더 생성
+        </S.BookmarkFolder>
         <S.ViewAll onClick={() => navigate(`/archive/bookmark/${type === "글" ? "typed" : "played"}`)}>
           전체보기
         </S.ViewAll>
