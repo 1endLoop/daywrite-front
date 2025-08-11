@@ -22,6 +22,7 @@
   import BookmarkTypedList from "../pages/archive/BookmarkTypedList";
   import BookmarkPlyedList from "../pages/archive/BookmarkPlyedList";
   import LikedList from "../pages/archive/LikedList";
+  import BookmarkPlayedNewFolder from "../pages/archive/BookmarkPlayedNewFolder";
 
   // Community
   import CommunityContainer from "../pages/community/CommunityContainer";
@@ -123,6 +124,14 @@ import Search from "../pages/auth/Search";
             path: "liked",
             element: <LikedList />,
           },
+          {
+            path: "bookmark/playedList",
+            element: <BookmarkPlyedList />, // 추가
+          },
+          {
+            path: "bookmark/playedNewFolder",
+            element: <BookmarkPlayedNewFolder /> // 추가
+          },
         ],
       },
       // 커뮤니티
@@ -159,7 +168,7 @@ import Search from "../pages/auth/Search";
             element: <CollectionAllview />,
           },
           {
-            path: "collection/detail", // detail 수정(/:id)
+            path: "collection/detail/:id", // detail 수정(/:id)
             element: <CollectionDetail />,
           },
         ],

@@ -58,6 +58,13 @@ S.LetterBox = styled.div`
     }
 `
 
+S.LikeCount = styled.div`
+    width: 70px;
+    height: 20px;
+    margin-top: 20px;
+    text-align: center;
+    position: absolute; right: 5px; top: 2px;
+`
 // 드롭다운
 S.dd = styled.div`
     border: solid 1px red;

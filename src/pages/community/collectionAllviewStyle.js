@@ -20,7 +20,7 @@ S.AllViewWrapper = styled.div`
     max-width: 1200px; // 170 * 6 + gap 고려
 `
 S.AllViewBox = styled.div`
-    border: solid 1px red;
+    /* border: solid 1px red; */
     width: 170px;
     height: 200px;
     margin-right: 30px;

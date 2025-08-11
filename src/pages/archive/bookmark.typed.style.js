@@ -23,6 +23,16 @@ S.PageTitle = styled.h2`
   font-weight: bold;
 `;
 
+S.NewFodler = styled.h3`
+  font-size: 16px;
+  font-weight: normal;
+  margin-left: 20px;
+  cursor: pointer;
+  &:hover {
+    color: #F96F3D;
+  } 
+`
+
 S.CountText = styled.span`
   font-size: 14px;
   color: gray;
@@ -289,7 +299,7 @@ S.ImgWrapper = styled.div`
   height: 120px;
   margin-top: 0px;
   background-color: #e0e0e0;
-  input {
+  #profile {
     display: none;
   }
 `;
@@ -298,13 +308,24 @@ S.Profile = styled.img`
   height: 120px;
   border: none;
 `;
-S.ImgUpload = styled.button`
+// S.ImgUpload = styled.button`
+//   background-color: #fee9e2;
+//   margin-top: 5px;
+//   border-radius: 5px;
+//   font-size: 12px;
+//   padding: 2px;
+// `;
+S.FolderName = styled.input`
   background-color: #fee9e2;
   margin-top: 5px;
+  border: none;
   border-radius: 5px;
   font-size: 12px;
   padding: 2px;
+  width: 115px;
+  height: 20px;
 `;
+
 // NewFolder countText
 S.NewFolderTextCount = styled.span`
   font-size: 14px;
