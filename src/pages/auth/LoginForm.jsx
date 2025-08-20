@@ -109,7 +109,9 @@ const LoginForm = () => {
         // 실패했다면
           if (!res.ok) {
             const contentType = res.headers.get("content-type");
-            let errorMessage = setToast("로그인에 실패했습니다.");
+            // let errorMessage = setToast("로그인에 실패했습니다."); 수정 //////////////////////////////////////////////////
+            let errorMessage = "로그인에 실패했습니다.";
+            setToast(errorMessage);
 
             if (contentType && contentType.includes("application/json")) {
               const errorResponse = await res.json();
@@ -130,8 +132,11 @@ const LoginForm = () => {
           console.log(res);
 
           // 1) 응답에서 user/토큰 확보 (백엔드 키 변화에 대응)
+          // const user  = res.user ?? res.currentUser ?? null;
+          // const token = res.accessToken ?? res.token ?? res.jwt ?? null; 수정 /////////////////////////////////////////////
           const user  = res.user ?? res.currentUser ?? null;
-          const token = res.accessToken ?? res.token ?? res.jwt ?? null;
+          // 백엔드 어디서 내려오든 잡히도록 키 범위 확장
+          const token = res.jwtToken ?? res.accessToken ?? res.token ?? res.jwt ?? null;
 
           // 2) 토큰 저장
           if (token) localStorage.setItem("jwtToken", token);
@@ -154,6 +159,12 @@ const LoginForm = () => {
             // me 호출 실패 시, 최소 user만 유지
             console.warn("Failed to fetch me:", e);
           }
+
+          // ✅ 여기! 최종 유저가 확보되었으면 _id를 저장 (북마크 호출 때 사용)
+          if (finalUser && finalUser._id) {
+            localStorage.setItem("uid", finalUser._id);
+          }
+
 
           // 4) 전역 상태 업데이트 (즉시 헤더가 'logout'으로 바뀌도록)
           dispatch(setUser(finalUser));

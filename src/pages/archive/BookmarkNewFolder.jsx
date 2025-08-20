@@ -29,19 +29,117 @@ const BookmarkNewFolder = () => {
   };
 
       // 데이터 조회
+    // useEffect(() => {
+    //     async function fetchData() {
+    //     try {
+    //         // const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/bookmarkFolder/newFolder`);
+    //         const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/bookmarkFolder/newFolder`, {
+    //             headers: {
+    //                 "Authorization": `Bearer ${localStorage.getItem("jwtToken")}`
+    //             }
+    //         });
+
+    //         const result = await res.json();
+
+    //         // createdAt 내림차순(최근 → 오래된 순)
+    //         const sorted = (result.bookmarkFolder ?? []).slice().sort((a, b) => {
+    //             return new Date(b.createdAt) - new Date(a.createdAt);
+    //         });
+
+    //         // setItems(result.bookmarkFolder); // 응답 데이터의 배열
+    //         setItems(sorted);
+    //     } catch (err) {
+    //         console.error("데이터 조회 실패:", err);
+    //     }
+    //     }
+
+    //     fetchData();
+    // }, []);
+
+    // useEffect(() => {
+    // async function fetchData() {
+    //     try {
+    //     const token = localStorage.getItem("jwtToken");
+    //     if (!token) {
+    //         console.warn("JWT 토큰이 없습니다.");
+    //         setItems([]); // UI는 빈 상태 표시
+    //         return;
+    //     }
+
+    //     const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/bookmarkFolder/newFolder`, {
+    //         headers: {
+    //         "Authorization": `Bearer ${token}`,
+    //         },
+    //     });
+
+    //     // ✅ 상태코드 체크
+    //     if (!res.ok) {
+    //         const text = await res.text();
+    //         console.error(`목록 요청 실패: ${res.status} ${res.statusText} - ${text}`);
+    //         setItems([]); // 실패 시 비우고 종료
+    //         return;
+    //     }
+
+    //     const result = await res.json();
+
+    //     // 서버가 이미 최신순이지만, 방어적으로 한 번 더 정렬
+    //     const sorted = (result.bookmarkFolder ?? [])
+    //         .slice()
+    //         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    //     setItems(sorted); // ✅ 정렬된 배열 사용
+    //     } catch (err) {
+    //     console.error("데이터 조회 실패:", err);
+    //     setItems([]);
+    //     }
+    // }
+
+    // fetchData();
+    // }, []);
+
     useEffect(() => {
-        async function fetchData() {
+    async function fetchData() {
         try {
-            const res = await fetch("http://localhost:8000/api/bookmarkFolder/newFolder");
-            const result = await res.json();
-            setItems(result.bookmarkFolder); // 응답 데이터의 배열
-        } catch (err) {
-            console.error("데이터 조회 실패:", err);
-        }
+        const uid = localStorage.getItem("uid");           // ✅ 로그인 때 저장한 내 userId
+        if (!uid) {
+            console.warn("uid가 없습니다. (로그인 후 uid 저장 확인)");
+            setItems([]);
+            return;
         }
 
-        fetchData();
+        const token = localStorage.getItem("jwtToken");    // 있으면 헤더로 같이 보냄(선택)
+
+        const url = `${process.env.REACT_APP_BACKEND_URL}/api/bookmarkFolder/newFolder?userId=${encodeURIComponent(uid)}`;
+
+        const res = await fetch(url, {
+            headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}), // 토큰이 있으면만 추가
+            },
+        });
+
+        if (!res.ok) {
+            const text = await res.text();
+            console.error(`목록 요청 실패: ${res.status} ${res.statusText} - ${text}`);
+            setItems([]);
+            return;
+        }
+
+        const result = await res.json();
+        const sorted = (result.bookmarkFolder ?? [])
+            .slice()
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // 최신순
+
+        setItems(sorted);
+        } catch (err) {
+        console.error("데이터 조회 실패:", err);
+        setItems([]);
+        }
+    }
+
+    fetchData();
     }, []);
+
+
 
     const [selectedCards, setSelectedCards] = useState([]);
     // 클릭한 카드 데이터 저장
@@ -100,16 +198,22 @@ const BookmarkNewFolder = () => {
         const data = await thumbRes.json(); // ✅ 한 번만 호출
         const { url: thumbnailUrl, filename, imageId } = data;
 
+        const ownerId = localStorage.getItem("uid"); // ✅ 로그인 시 저장했던 내 userId
+
         // 폴더 생성 요청
         const folderRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/bookmarkFolder/folder`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            // "Authorization": `Bearer ${localStorage.getItem("jwtToken")}`,
+        },
         body: JSON.stringify({
             title: folderTitle, // 따로 인풋 받을 수도 있음
             type: "글", // 혹은 "곡"
             historyIds: selectedCards.map(card => card._id),
             thumbnailUrl,
             imageUpload: imageId,
+            ownerId,
         }),
         });
 
