@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import BookmarkCard from "./BookmarkCard";
 import S from "./bookmark.section.style";
 
@@ -9,101 +9,130 @@ const BookmarkAll = () => {
 
   const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
   const title = capitalize(type); // "Typed" 또는 "Played"
-  const contentType = type === "typed" ? "글" : "곡";
+  const navigate = useNavigate();
 
+  // typed 보여주기
   useEffect(() => {
     const fetchFolders = async () => {
       try {
-        const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/playList/folders`);
-        const data = await res.json();
-        const filtered = data.filter(folder => folder.type === contentType);
-        setItems(filtered);
-      } catch (err) {
-        console.error("폴더 목록 불러오기 실패:", err);
+        const uid = localStorage.getItem("uid");
+        if (!uid) return setItems([]);
+
+        const token = localStorage.getItem("jwtToken");
+
+        const basePath = type === "typed" ? "bookmarkFolder" : "playList";
+        const filterType = type === "typed" ? "글" : "곡";
+
+        const res = await fetch(
+          `${process.env.REACT_APP_BACKEND_URL}/api/${basePath}/folders?userId=${encodeURIComponent(uid)}&type=${encodeURIComponent(filterType)}`,
+          { headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) } }
+        );
+
+        if (!res.ok) {
+          console.error("폴더 목록 실패", await res.text());
+          return setItems([]);
+        }
+
+        const data = await res.json(); // [{ id, title, type, thumbnailUrl, count }]
+        setItems(data); // 이미 서버에서 type 필터됨
+      } catch (e) {
+        console.error(e);
+        setItems([]);
       }
     };
-
     fetchFolders();
   }, [type]);
 
-  // 임시 북마크 목록 데이터
-  // const allItems = [
-  //   {
-  //     title: "니체 명언집",
-  //     count: 10,
-  //     type: "글",
-  //     imageUrl: "/assets/images/book-img.jpeg",
-  //   },
-  //   {
-  //     title: "니체 명언집",
-  //     count: 10,
-  //     type: "글",
-  //     imageUrl: "/assets/images/book-img.jpeg",
-  //   },
-  //   {
-  //     title: "니체 명언집",
-  //     count: 10,
-  //     type: "글",
-  //     imageUrl: "/assets/images/book-img.jpeg",
-  //   },
-  //   {
-  //     title: "니체 명언집",
-  //     count: 10,
-  //     type: "글",
-  //     imageUrl: "/assets/images/book-img.jpeg",
-  //   },
-  //   {
-  //     title: "니체 명언집",
-  //     count: 10,
-  //     type: "글",
-  //     imageUrl: "/assets/images/book-img.jpeg",
-  //   },
-  //   {
-  //     title: "니체 명언집",
-  //     count: 10,
-  //     type: "글",
-  //     imageUrl: "/assets/images/book-img.jpeg",
-  //   },
-  //   {
-  //     title: "니체 명언집",
-  //     count: 10,
-  //     type: "글",
-  //     imageUrl: "/assets/images/book-img.jpeg",
-  //   },
-  //   {
-  //     title: "사랑에 빠졌을 때",
-  //     count: 8,
-  //     type: "곡",
-  //     imageUrl: "/assets/images/album-image.png",
-  //   },
-  //   {
-  //     title: "포근한",
-  //     count: 8,
-  //     type: "곡",
-  //     imageUrl: "/assets/images/profiles/cat.JPG",
-  //   },
-  // ];
+  
+  // 이미지
+  // const buildImageSrc = (thumb = "") => {
+  //   if (!thumb) return "";
+  //   // 완전한 URL이면 그대로
+  //   if (/^https?:\/\//i.test(thumb)) return thumb;
 
-  // const filteredItems = allItems.filter((item) => item.type === contentType);
+  //   // "/uploads/xxx" 같이 슬래시로 시작 → API_BASE + thumb
+  //   if (thumb.startsWith("/")) return `${API_BASE}${thumb}`;
+
+  //   // "uploads/xxx" → API_BASE + "/uploads/xxx"
+  //   if (thumb.startsWith("uploads/")) return `${API_BASE}/${thumb}`;
+
+  //   // 그 외 "profile/xxx" 같은 상대경로 → API_BASE + "/uploads/" + thumb
+  //   return `${API_BASE}/uploads/${thumb}`;
+  // };
+
+  
+  // BookmarkAll.jsx
+  const getAssetOrigin = () => {
+    // 예: http://localhost:8000 또는 http://localhost:8000/api
+    const raw = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
+    // 끝의 /api 제거
+    return raw.replace(/\/api$/i, "");
+  };
+
+  const buildImageSrc = (thumb = "") => {
+    if (!thumb) return "";
+    // 절대 URL이면 그대로
+    if (/^https?:\/\//i.test(thumb)) return thumb;
+
+    const origin = getAssetOrigin() || "http://localhost:8000";
+
+    // "/uploads/..." → origin + thumb
+    if (thumb.startsWith("/")) return `${origin}${thumb}`;
+    // "uploads/..." → origin + "/uploads/..."
+    if (thumb.startsWith("uploads/")) return `${origin}/${thumb}`;
+    // "thumbnail/..."처럼 uploads 빠졌을 때 → origin + "/uploads/thumbnail/..."
+    return `${origin}/uploads/${thumb}`;
+  };
+
+
+  useEffect(() => {
+    console.table(items.map(i => ({
+      title: i.title,
+      raw: i.thumbnailUrl,
+      built: buildImageSrc(i.thumbnailUrl)
+    })));
+  }, [items]);
+
+
+  // useEffect(() => {
+  //   const fetchFolders = async () => {
+  //     try {
+  //       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/playList/folders`);
+  //       const data = await res.json();
+  //       const filtered = data.filter(folder => folder.type === contentType);
+  //       setItems(filtered);
+  //     } catch (err) {
+  //       console.error("폴더 목록 불러오기 실패:", err);
+  //     }
+  //   };
+
+  //   fetchFolders();
+  // }, [type]);
+
 
   return (
     <S.Container>
-      {/* <S.AllTitle>{title}</S.AllTitle>
-      <S.AllCardGrid>
-        {filteredItems.map((item, idx) => (
-          <BookmarkCard key={idx} {...item} />
-        ))}
-      </S.AllCardGrid> */}
-      <S.AllTitle>{title}</S.AllTitle>
+      <S.AllTitle>{type.charAt(0).toUpperCase() + type.slice(1)}</S.AllTitle>
       <S.AllCardGrid>
         {items.map((item) => (
-          <BookmarkCard 
-          key={item._id}                    // MongoDB 기본 키 사용
-          title={item.title}
-          count={item.playlistIds?.length || 0}
-          type={item.type}
-          imageUrl={item.thumbnailUrl}     
-          onClick={() => console.log(item)} // 필요 시 상세 페이지로 이동 등
+          <BookmarkCard
+            key={item.id}
+            title={item.title}
+            count={item.count}
+            type={item.type}
+            imageUrl={buildImageSrc(item.thumbnailUrl)}
+            onClick={() => {
+              if (type === "typed") {
+                navigate(`/archive/bookmark/typed/typedList/${item.id}`, {
+                  state: { title: item.title, thumbnailUrl: buildImageSrc(item.thumbnailUrl) },
+                });
+              } else {
+                // ✅ 곡 폴더 상세로 이동
+                navigate(`/archive/bookmark/playedList/${item.id}`, {
+                  state: { title: item.title, thumbnailUrl: buildImageSrc(item.thumbnailUrl) },
+                });
+              }
+            }}
           />
         ))}
       </S.AllCardGrid>

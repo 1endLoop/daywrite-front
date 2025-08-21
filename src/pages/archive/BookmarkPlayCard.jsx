@@ -1,12 +1,17 @@
 import S from "./bookmarkPlayStyle";
 
-const BookmarkPlayCard = ({ data, selectedItems, setSelectedItems}) => {
+const BookmarkPlayCard = ({
+  data = [],                         // ✅ 기본값
+  selectedItems = [],                // ✅ 기본값
+  setSelectedItems = () => {},       // ✅ 기본값
+  selectable = true,                 // 선택 토글을 쓸지 여부
+}) => {
+  const list = Array.isArray(data) ? data : []; // ✅ 더 안전
 
   const toggleSelect = (id) => {
+    if (!selectable) return; // 읽기 전용이면 무시
     setSelectedItems((prev) =>
-      prev.includes(id)
-        ? prev.filter((itemId) => itemId !== id) // 이미 선택돼 있으면 제거
-        : [...prev, id] // 아니면 추가
+      prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]
     );
   };
 
@@ -22,29 +27,39 @@ const BookmarkPlayCard = ({ data, selectedItems, setSelectedItems}) => {
           <p className='play'>재생</p>
         </S.PlayInfo>
 
-        {data.map((item, index) => (
-          <S.PlayedCardBox
-            key={item._id}
-            className={selectedItems.includes(item._id) ? 'selected' : ''}
-            onClick={() => toggleSelect(item._id)}
-          >
-            <div className="num"><p>{index + 1}</p></div>
-            <div className="album">
-              <img
-                src={item.imageUrl || "/assets/images/default-album.png"}
-                style={{ width: "100%", height: "100%" }}
-              />
-            </div>
-            <div className="singName"><p>{item.title}</p></div>
-            <div className="artistName"><p>{item.artist}</p></div>
-            <div className='like'>
-              <img src="/assets/images/icons/like-on-color.png" alt="좋아요" />
-            </div>
-            <div className='play'>
-              <img src="/assets/images/icons/play.png" alt="재생" />
-            </div>
-          </S.PlayedCardBox>
-        ))}
+        {list.length === 0 ? (
+          <div style={{ padding: 16, color: "#888" }}>표시할 곡이 없어요.</div>
+        ) : (
+          list.map((item, index) => {
+            const id = item._id || item.id || `${item.title}-${item.artist}-${index}`;
+            const isSelected = Array.isArray(selectedItems) && selectedItems.includes(id);
+
+            return (
+              <S.PlayedCardBox
+                key={id}
+                className={isSelected ? "selected" : ""}
+                onClick={() => toggleSelect(id)}
+              >
+                <div className="num"><p>{index + 1}</p></div>
+                <div className="album">
+                  <img
+                    src={item.img || item.imageUrl || "/assets/images/defaultAlbumCover.jpg"}
+                    alt={item.title || "album"}
+                    style={{ width: "100%", height: "100%" }}
+                  />
+                </div>
+                <div className="singName"><p>{item.title || item.songTitle || "-"}</p></div>
+                <div className="artistName"><p>{item.artist || item.singer || "-"}</p></div>
+                <div className='like'>
+                  <img src="/assets/images/icons/like-on-color.png" alt="좋아요" />
+                </div>
+                <div className='play'>
+                  <img src="/assets/images/icons/play.png" alt="재생" />
+                </div>
+              </S.PlayedCardBox>
+            );
+          })
+        )}
       </S.PlayBox>
     </div>
   );

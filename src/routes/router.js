@@ -118,12 +118,16 @@ const router = createBrowserRouter([
             element: <BookmarkTyped />,
           },
           {
+            path: "bookmark/:type/typedList/:id",
+            element: <BookmarkTypedList />,  // 추가
+          },
+          {
             path: "liked",
             element: <LikedList />,
           },
           {
-            path: "bookmark/playedList",
-            element: <BookmarkPlayedList />, // 추가
+            path: "bookmark/playedList/:id",   // 추가
+            element: <BookmarkPlayedList />,
           },
           {
             path: "bookmark/playedNewFolder",
