@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './calendarcustom.css';
@@ -10,38 +11,35 @@ const CalendarList = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
 
-
-  // useEffect(() => {
-  //   const dummyData = [
-  //     { date: '2025-06-30', title: 'aaaa',author: 'dd is good', color: '#D8FFE3' },
-  //     { date: '2025-06-30', title: 'travcommoeefsfefaefnadlikeiyoudel',author: 'lucy is good', color: '#D8FFE3' },
-  //     { date: '2025-06-01', title: 'friends is aefeafefaefaefgood godd gdodo',author: 'happy day', color: '#FFDEE3' },
-  //     { date: '2025-06-04', title: 'mylife haha', author: 'goodluct',color: '#FFF3C7' },
-  //     { date: '2025-06-13', title: 'today mtoydkaynood is ood',author: 'applecomapny', color: '#FFF9C4' },
-  //     { date: '2025-06-22', title: 'LUY ',author: 'drawio', color: '#D8FFE3' },
-  //     { date: '2025-06-11', title: 'hate yourseaefaeflf', author: 'phone',color: '#FFDCFA' },
-  //     { date: '2025-06-11', title: 'Love youaeaefefaefrself', author: 'phone',color: '#FFDCFA' },
-  //     { date: '2025-06-11', title: 'Love youaaefaeefefefaefrself', author: 'phone',color: '#FFDCFA' },
-  //     { date: '2025-06-11', title: 'Love yoaefafeaefeurself', author: 'phone',color: '#FFDCFA' },
-  //     { date: '2025-06-11', title: 'Love yourself', author: 'phone',color: '#FFDCFA' },
-  //   ];
-
-  //   const data = {};
-  //   dummyData.forEach(({date, title, author, color}) => {
-  //     data[date] =data[date] || [];
-  //     data[date].push({ title: title, author: author ,color: color });
-  //   });
-
-  //   setCalendarData(data);
-  // },[]);
+  // 로그인 유저 확인
+  const auth = useSelector((s) => s.user || s.auth || {});
+  const rawUser = auth.user || auth.data || auth.profile || auth.currentUser || null;
+  const userId = rawUser?._id ?? rawUser?.id ?? rawUser?.userId ?? localStorage.getItem("uid") ?? null;
+  const isAuthed = typeof auth.isLoggedIn === "boolean" ? auth.isLoggedIn : Boolean(userId);
 
   useEffect(() => {
+    if (!isAuthed || !userId) {
+      return;
+    }
+
       const fetchData = async () => {
         try {
           // 1. 모든 history 불러오기
-          const historyRes = await fetch("http://localhost:8000/api/history");
+          const token = localStorage.getItem("jwtToken");
+          
+          const historyRes = await fetch(`http://localhost:8000/api/history/user/${userId}`, {
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            }
+          });
+          
+          if (!historyRes.ok) {
+            console.error("API 응답 에러:", historyRes.status, historyRes.statusText);
+            return;
+          }
+          
           const histories = await historyRes.json();
-          console.log(histories)
+          console.log("받아온 histories:", histories)
         
           const data = {};
           histories.forEach(({createdAt,content ,book, author, mood, music, artist}) => {
@@ -58,7 +56,7 @@ const CalendarList = () => {
       };
 
     fetchData();
-  }, []);
+  }, [isAuthed, userId]);
 
   const handleDateClick = (date) => {
     const dateString = date.toLocaleDateString('en-CA');
