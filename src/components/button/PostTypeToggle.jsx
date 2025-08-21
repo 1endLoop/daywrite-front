@@ -5,11 +5,11 @@ import styled from "styled-components";
 const PostTypeToggle = ({ isOriginal, onToggle }) => {
   return (
     <ToggleWrapper>
-      <Slider active={isOriginal} />
-      <Option active={isOriginal} onClick={() => onToggle(true)} position="left">
+      <Slider $active={isOriginal} />
+      <Option $active={isOriginal} onClick={() => onToggle(true)}>
         창작글
       </Option>
-      <Option active={!isOriginal} onClick={() => onToggle(false)} position="right">
+      <Option $active={!isOriginal} onClick={() => onToggle(false)}>
         참조글
       </Option>
     </ToggleWrapper>
@@ -18,7 +18,7 @@ const PostTypeToggle = ({ isOriginal, onToggle }) => {
 
 export default PostTypeToggle;
 
-// ✅ 스타일 영역 (기존 ToggleButton 복붙 후 텍스트만 수정)
+// styles
 const ToggleWrapper = styled.div`
   font-family: Pretendard;
   font-weight: 500;
@@ -38,7 +38,7 @@ const ToggleWrapper = styled.div`
 const Slider = styled.div`
   position: absolute;
   top: 4px;
-  left: ${({ active }) => (active ? "4px" : "calc(50%)")};
+  left: ${({ $active }) => ($active ? "4px" : "calc(50%)")};
   width: calc(50% - 5px);
   height: 28px;
   background-color: #ffffff;
@@ -56,7 +56,7 @@ const Option = styled.div`
   justify-content: center;
   font-size: 15px;
   font-weight: 500;
-  color: ${({ active }) => (active ? "#f96f3d" : "#ffffff")};
+  color: ${({ $active }) => ($active ? "#f96f3d" : "#ffffff")};
   z-index: 2;
   user-select: none;
   position: relative;

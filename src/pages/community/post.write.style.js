@@ -41,8 +41,8 @@ S.ButtonGroup = styled.div`
 
 S.Button = styled.button`
   padding: 8px 16px;
-  background-color: ${({ primary }) => (primary ? ORANGE : "#fff")};
-  color: ${({ primary }) => (primary ? "#fff" : ORANGE)};
+  background-color: ${({ $primary }) => ($primary ? ORANGE : "#fff")};
+  color: ${({ $primary }) => ($primary ? "#fff" : ORANGE)};
   border: 1px solid ${ORANGE};
   border-radius: 6px;
   cursor: pointer;

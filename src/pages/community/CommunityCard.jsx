@@ -1,65 +1,67 @@
+// src/pages/community/CommunityCard.jsx
 import { useState } from "react";
 import Card from "./community.card.style";
 
 const CommunityCard = ({ data, onClick }) => {
   const {
-    content,
-    title,
-    author,
-    music,
-    artist,
-    profileImg = "", // ❗️이미지 없어도 에러 안 나게 기본값 처리
+    content = "",
+    title = "",
+    // refAuthor 는 표시 보류 (추후 참조글 배지/표시 예정)
+    musicTitle = "",
+    musicArtist = "",
+    profileImg = data?.profileImg || data?.profileImageUrl || "",
+    nickname = "익명",
     likes = 0,
     comments = 0,
   } = data;
 
-  // 좋아요 토글 버튼
-  const [liked, setLiked] = useState(true);
-  const [musicLiked, setMusicLiked] = useState(true);
+  const [liked, setLiked] = useState(false);
+  const [musicLiked, setMusicLiked] = useState(false);
 
   return (
     <Card.Card>
       <Card.Header>
         <Card.LeftInfo>
-          <Card.Profile src={profileImg || "../assets/images/profiles/profile2.jpeg"} alt="profile" />
+          <Card.Profile src={profileImg || "/assets/images/profiles/profile.jpg"} alt="profile" />
           <Card.TitleWrapper>
             <span className="title">{title}</span>
-            <span className="author">{author}</span>
+            <span className="author">{nickname}</span>
           </Card.TitleWrapper>
         </Card.LeftInfo>
         <Card.RightInfo>
-            <Card.IconGroup>
-              <Card.Icon onClick={() => setLiked((prev) => !prev)}>
-                <img
-                  src={liked ? "../assets/images/icons/svg/thumb=on.svg" : "../assets/images/icons/svg/thumb=off.svg"}
-                  alt="like"
-                />
-              </Card.Icon>
+          <Card.IconGroup>
+            <Card.Icon onClick={() => setLiked((prev) => !prev)}>
+              <img
+                src={liked ? "/assets/images/icons/svg/thumb=on.svg" : "/assets/images/icons/svg/thumb=off.svg"}
+                alt="like"
+              />
+            </Card.Icon>
+            <span>{likes}</span>
+          </Card.IconGroup>
 
-              <span>{likes}</span>
-            </Card.IconGroup>
-            <Card.IconGroup>
-              <img src="/assets/images/icons/svg/comment.svg" alt="comment" />
-              <span>{comments}</span>
-            </Card.IconGroup>
+          <Card.IconGroup>
+            <img src="/assets/images/icons/svg/comment.svg" alt="comment" />
+            <span>{comments}</span>
+          </Card.IconGroup>
         </Card.RightInfo>
       </Card.Header>
 
       <Card.Content onClick={onClick}>{content}</Card.Content>
       <Card.Divider />
+
       <Card.MusicInfo>
         <Card.MusicLeft>
           <Card.Icon onClick={() => setMusicLiked((prev) => !prev)}>
             <img
-              src={musicLiked ? "../assets/images/icons/svg/like=on.svg" : "../assets/images/icons/svg/like=off.svg"}
+              src={musicLiked ? "/assets/images/icons/svg/like=on.svg" : "/assets/images/icons/svg/like=off.svg"}
               alt="like"
             />
           </Card.Icon>
           <span role="img" aria-label="music">
             🎵
           </span>
-          <span className="music-name">{music}</span>
-          <span className="artist">{artist}</span>
+          <span className="music-name">{musicTitle}</span>
+          <span className="artist">{musicArtist}</span>
         </Card.MusicLeft>
       </Card.MusicInfo>
     </Card.Card>
