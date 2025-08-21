@@ -3,122 +3,137 @@ import S from './collectionStyle';
 import { useNavigate } from 'react-router-dom';
 
 const CommunityCollection = () => {
-  const [openDropdown, setOpenDropdown] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null);
   const dropdownRef = useRef(null);
   const [playedFolders, setPlayedFolders] = useState([]);
   const [typedFolders, setTypedFolders] = useState([]);
   const navigate = useNavigate();
 
-  // 백엔드에서 저장된 played 폴더 가져오기
-  useEffect(() => {
-    const fetchPlayedFolders = async () => {
-      try {
-        const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/playList/folders`);
-        const data = await res.json();
-        const onlyPlayed = data
-          .filter(item => item.type === "곡")
-          .sort((a, b) => b.likeCount - a.likeCount) // 좋아요 순 정렬
-          .slice(0, 5); // 상위 5개만
-        setPlayedFolders(onlyPlayed);
-        // const onlyPlayed = data.filter(item => item.type === "곡");
-        setPlayedFolders(onlyPlayed);
-      } catch (err) {
-        console.error("Played 폴더 불러오기 실패:", err);
-      }
-    };
+  // 정적 파일 origin (http://localhost:8000 등)
+  const getAssetOrigin = () => {
+    const raw = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
+    return raw.replace(/\/api$/i, "") || "http://localhost:8000";
+  };
+  const buildImageSrc = (thumb = "") => {
+    if (!thumb) return "";
+    if (/^https?:\/\//i.test(thumb)) return thumb;
+    const origin = getAssetOrigin();
+    if (thumb.startsWith("/")) return `${origin}${thumb}`;
+    if (thumb.startsWith("uploads/")) return `${origin}/${thumb}`;
+    return `${origin}/uploads/${thumb}`;
+  };
 
-    fetchPlayedFolders();
+  // Top 5 Played
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/playList/folders/top?limit=5`);
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json(); // [{id,title,type,thumbnailUrl,count,likeCount}]
+        setPlayedFolders(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Played Top 불러오기 실패:", err);
+        setPlayedFolders([]);
+      }
+    })();
   }, []);
 
-  // typed folder 가져오기
+  // Top 5 Typed
   useEffect(() => {
-    const fetchFolders = async () => {
+    (async () => {
       try {
-        const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/bookmarkFolder/folders`);
-        const data = await res.json();
-        const onlyTyped = data
-          .filter(item => item.type === "글")
-          .sort((a, b) => b.likeCount - a.likeCount) // 좋아요 수 내림차순
-          .slice(0, 5); // 상위 5개만
-        setTypedFolders(onlyTyped);
-        // const onlyTyped = data.filter(item => item.type === "글");
-        setTypedFolders(onlyTyped);
+        const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/bookmarkFolder/folders/top?limit=5`);
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json(); // [{id,title,type,thumbnailUrl,count,likeCount}]
+        setTypedFolders(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.error("폴더 불러오기 실패:", err);
+        console.error("Typed Top 불러오기 실패:", err);
+        setTypedFolders([]);
       }
-    };
-
-    fetchFolders();
+    })();
   }, []);
-
 
   return (
     <div>
+      {/* 인기 글 컬렉션 */}
       <S.TypedTitle>
         <h2>인기 글 컬렉션</h2>
-        <p>전체보기 &gt;</p>
+        <p onClick={() => navigate(`/community/collection/collectionAllview`)}>전체보기 &gt;</p>
       </S.TypedTitle>
-        <S.TypedWrapper>
-          {typedFolders.map((folders, i) => (
-            <S.TypedBox key={folders.id}>
-              <img
-                src={`${process.env.REACT_APP_BACKEND_URL}/uploads/${folders.thumbnailUrl}`}
-                alt={folders.title}
-              />
-              <S.LetterBox>
-                <div>
-                  <h6>{folders.title}</h6>
-                  <p>{folders.count}개의 글</p>
-                </div>
-                <S.dd onClick={() => setOpenDropdown(openDropdown === i ? null : i)}>
-                  <S.Wrapper ref={dropdownRef}>
-                    {openDropdown === i && (
-                      <S.Menu>
-                        <S.Item onClick={() => alert("이름을 변경하겠습니다!")}>이름변경</S.Item>
-                        <S.Item onClick={() => alert("폴더를 삭제하겠습니다!")}>폴더삭제</S.Item>
-                        <S.Item onClick={() => alert("공유하겠습니다!")}>공유하기</S.Item>
-                      </S.Menu>
-                    )}
-                  </S.Wrapper>
-                  <S.LikeCount><p className='likeCount'>좋아요 수</p></S.LikeCount>
-                </S.dd>
-              </S.LetterBox>
-            </S.TypedBox>
-          ))}
-          {/* 다른 TypedBox 요소들도 여기에 추가 */}
-        </S.TypedWrapper>
 
-      {/* Played */}
+      <S.TypedWrapper>
+        {typedFolders.map((folder, i) => (
+          <S.TypedBox
+            key={folder.id}
+            onClick={() => navigate(`/archive/bookmark/typed/typedList/${folder.id}`, {
+              state: { title: folder.title, thumbnailUrl: buildImageSrc(folder.thumbnailUrl) }
+            })}
+          >
+            <img
+              src={buildImageSrc(folder.thumbnailUrl) || "/assets/images/book-img.jpeg"}
+              alt={folder.title}
+            />
+            <S.LetterBox>
+              <div>
+                <h6>{folder.title}</h6>
+                <p>{folder.count}개의 글</p>
+              </div>
+              <S.dd onClick={(e) => { e.stopPropagation(); setOpenDropdown(openDropdown === i ? null : i); }}>
+                <S.Wrapper ref={dropdownRef}>
+                  {openDropdown === i && (
+                    <S.Menu>
+                      <S.Item onClick={() => alert("이름을 변경하겠습니다!")}>이름변경</S.Item>
+                      <S.Item onClick={() => alert("폴더를 삭제하겠습니다!")}>폴더삭제</S.Item>
+                      <S.Item onClick={() => alert("공유하겠습니다!")}>공유하기</S.Item>
+                    </S.Menu>
+                  )}
+                </S.Wrapper>
+                <S.LikeCount><p className='likeCount'>{folder.likeCount ?? 0} 좋아요</p></S.LikeCount>
+              </S.dd>
+            </S.LetterBox>
+          </S.TypedBox>
+        ))}
+      </S.TypedWrapper>
+
+      {/* 인기 음악 플레이리스트 */}
       <S.PlayedTitle>
         <h2>인기 음악 플레이리스트</h2>
         <p onClick={() => navigate(`/community/collection/collectionAllview`)}>전체보기 &gt;</p>
       </S.PlayedTitle>
-        <S.TypedWrapper>
-          {playedFolders.map((folder, i) => (
-            <S.TypedBox key={folder.id}>
-              <img src={folder.thumbnailUrl} alt={folder.title} />
-              <S.LetterBox>
-                <div>
-                  <h6>{folder.title}</h6>
-                  <p>{folder.count}개의 곡</p>
-                </div>
-                <S.dd onClick={() => setOpenDropdown(openDropdown === i ? null : i)}>
-                  <S.Wrapper ref={dropdownRef}>
-                    {openDropdown === i && (
-                      <S.Menu>
-                        <S.Item onClick={() => alert("이름을 변경하겠습니다!")}>이름변경</S.Item>
-                        <S.Item onClick={() => alert("폴더를 삭제하겠습니다!")}>폴더삭제</S.Item>
-                        <S.Item onClick={() => alert("공유하겠습니다!")}>공유하기</S.Item>
-                      </S.Menu>
-                    )}
-                  </S.Wrapper>
-                  <S.LikeCount><p className='likeCount'>{folder.likeCount} 좋아요</p></S.LikeCount>
-                </S.dd>
-              </S.LetterBox>
-            </S.TypedBox>
-          ))}
-          {/* 다른 Played 박스도 추가 */}
-        </S.TypedWrapper>
+
+      <S.TypedWrapper>
+        {playedFolders.map((folder, i) => (
+          <S.TypedBox
+            key={folder.id}
+            onClick={() => navigate(`/archive/bookmark/playedList/${folder.id}`, {
+              state: { title: folder.title, thumbnailUrl: buildImageSrc(folder.thumbnailUrl) }
+            })}
+          >
+            <img
+              src={buildImageSrc(folder.thumbnailUrl) || "/assets/images/album-image.png"}
+              alt={folder.title}
+            />
+            <S.LetterBox>
+              <div>
+                <h6>{folder.title}</h6>
+                <p>{folder.count}개의 곡</p>
+              </div>
+              <S.dd onClick={(e) => { e.stopPropagation(); setOpenDropdown(openDropdown === i ? null : i); }}>
+                <S.Wrapper ref={dropdownRef}>
+                  {openDropdown === i && (
+                    <S.Menu>
+                      <S.Item onClick={() => alert("이름을 변경하겠습니다!")}>이름변경</S.Item>
+                      <S.Item onClick={() => alert("폴더를 삭제하겠습니다!")}>폴더삭제</S.Item>
+                      <S.Item onClick={() => alert("공유하겠습니다!")}>공유하기</S.Item>
+                    </S.Menu>
+                  )}
+                </S.Wrapper>
+                <S.LikeCount><p className='likeCount'>{folder.likeCount ?? 0} 좋아요</p></S.LikeCount>
+              </S.dd>
+            </S.LetterBox>
+          </S.TypedBox>
+        ))}
+      </S.TypedWrapper>
     </div>
   );
 };

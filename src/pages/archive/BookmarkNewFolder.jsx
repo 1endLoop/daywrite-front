@@ -97,6 +97,7 @@ const BookmarkNewFolder = () => {
     // fetchData();
     // }, []);
 
+    // 데이터 조회
     useEffect(() => {
     async function fetchData() {
         try {

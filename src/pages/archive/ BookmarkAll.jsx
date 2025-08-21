@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import BookmarkCard from "./BookmarkCard";
 import S from "./bookmark.section.style";
 
@@ -9,8 +9,7 @@ const BookmarkAll = () => {
 
   const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
   const title = capitalize(type); // "Typed" 또는 "Played"
-  const contentType = type === "typed" ? "글" : "곡";
-  const API_BASE = (process.env.REACT_APP_BACKEND_URL || "http://localhost:8000").replace(/\/$/, ""); //
+  const navigate = useNavigate();
 
   // typed 보여주기
   useEffect(() => {
@@ -113,29 +112,30 @@ const BookmarkAll = () => {
 
   return (
     <S.Container>
-      <S.AllTitle>{title}</S.AllTitle>
+      <S.AllTitle>{type.charAt(0).toUpperCase() + type.slice(1)}</S.AllTitle>
       <S.AllCardGrid>
         {items.map((item) => (
-          // <BookmarkCard
-          //   key={item.id}               // ← _id가 아니라 id
-          //   title={item.title}
-          //   count={item.count}          // ← playlistIds 길이 말고 서버에서 계산된 count 사용
-          //   type={item.type}
-          //   // imageUrl={item.thumbnailUrl}
-          //   imageUrl={buildImageSrc(item.thumbnailUrl)}
-          //   onClick={() => console.log(item)}
-          // />
           <BookmarkCard
             key={item.id}
             title={item.title}
             count={item.count}
             type={item.type}
             imageUrl={buildImageSrc(item.thumbnailUrl)}
-            onClick={() => console.log(item)}
+            onClick={() => {
+              if (type === "typed") {
+                navigate(`/archive/bookmark/typed/typedList/${item.id}`, {
+                  state: { title: item.title, thumbnailUrl: buildImageSrc(item.thumbnailUrl) },
+                });
+              } else {
+                // ✅ 곡 폴더 상세로 이동
+                navigate(`/archive/bookmark/playedList/${item.id}`, {
+                  state: { title: item.title, thumbnailUrl: buildImageSrc(item.thumbnailUrl) },
+                });
+              }
+            }}
           />
         ))}
       </S.AllCardGrid>
-
     </S.Container>
   );
 };
