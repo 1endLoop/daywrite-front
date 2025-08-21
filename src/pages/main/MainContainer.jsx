@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import M from "./main.form.style";
@@ -28,8 +28,8 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
 
   const auth = useSelector((s) => s.user || s.auth || {});
   const rawUser = auth.user || auth.data || auth.profile || auth.currentUser || null;
-  const userId = rawUser?._id ?? rawUser?.id ?? rawUser?.userId ?? null;
-  const isAuthed = typeof auth.isLoggedIn === "boolean" ? auth.isLoggedIn : Boolean(userId);
+  const userId = rawUser?._id ?? rawUser?.id ?? rawUser?.userId ?? "guest";
+  const isAuthed = typeof auth.isLoggedIn === "boolean" ? auth.isLoggedIn : userId !== "guest";
 
   const handlePlayToggle = () => {
     setIsPlaying((prev) => !prev);
@@ -40,28 +40,47 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
     setShowPopup(true);
   };
 
-  // fontsize, fontweight
+  // =========================
+  //  폰트 사이즈/웨이트
+  // =========================
   const [fontSize, setFontSize] = useState(24);
   const [fontWeight, setFontWeight] = useState(600);
-  const getLineHeight = (fontSize) => {
-    if (fontSize < 18) return Math.round(fontSize * 1.38);
-    if (fontSize < 24) return Math.round(fontSize * 1.4);
-    if (fontSize < 32) return Math.round(fontSize * 1.42);
-    return Math.round(fontSize * 1.45);
-  };
 
+  // 계정별 로컬스토리지 키 함수
+  const nsKey = useMemo(() => (k) => `pref:${userId}:${k}`, [userId]);
+
+  const getLineHeight = (fs) => {
+    if (fs < 18) return Math.round(fs * 1.38);
+    if (fs < 24) return Math.round(fs * 1.4);
+    if (fs < 32) return Math.round(fs * 1.42);
+    return Math.round(fs * 1.45);
+  };
   const lineHeight = getLineHeight(fontSize);
 
+  // ✅ 계정별 키에서 로드 (초기/유저 변경 시)
   useEffect(() => {
-    const savedSize = parseInt(localStorage.getItem("fontSize"), 10);
-    const savedWeight = parseInt(localStorage.getItem("fontWeight"), 10);
-    if (!isNaN(savedSize)) setFontSize(savedSize);
-    if (!isNaN(savedWeight)) setFontWeight(savedWeight);
-  }, []);
+    const s = Number(localStorage.getItem(nsKey("fontSize")) ?? 24);
+    const w = Number(localStorage.getItem(nsKey("fontWeight")) ?? 600);
+    if (!Number.isNaN(s)) setFontSize(s);
+    if (!Number.isNaN(w)) setFontWeight(w);
+  }, [nsKey]);
 
-  // 플레이리스트
+  // (옵션) 다른 탭/창에서 값 바뀌면 동기화
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (!e.key || !e.key.startsWith(`pref:${userId}:`)) return;
+      if (e.key.endsWith(":fontSize")) setFontSize(Number(e.newValue ?? 24));
+      if (e.key.endsWith(":fontWeight")) setFontWeight(Number(e.newValue ?? 600));
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [userId]);
+
+  // =========================
+  //  플레이리스트
+  // =========================
   const [showPlaylist, setShowPlaylist] = useState(false);
-  const [currentSong, setCurrentSong] = useState(null); 
+  const [currentSong, setCurrentSong] = useState(null);
   const [musicList, setMusicList] = useState([]);
 
   const fetchRandomScript = async () => {
@@ -87,7 +106,6 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
       setSelectedGenres(genres);
 
       const music = await fetchRecommendedMusic(keywords, genres);
-
       const DEFAULT_LASTFM_IMAGE = "https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png";
 
       const parsed = music.map((track) => {
@@ -103,7 +121,7 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
       });
 
       setMusicList(parsed);
-      setCurrentSong(parsed[0] || null); 
+      setCurrentSong(parsed[0] || null);
 
       setInputValue("");
       setFade(true);
@@ -141,24 +159,23 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
 
   // 필사글 저장
   const handleSave = async () => {
-    if (!isAuthed || !userId) {
+    if (!isAuthed || !userId || userId === "guest") {
       alert("로그인 시 사용 가능한 기능입니다!");
       return;
     }
-
     if (!currentData || inputValue.trim() === "") {
       alert("필사 내용이 비어 있어요!");
       return;
     }
 
     const historyData = {
-      userId, 
+      userId,
       content: inputValue,
       book: currentData.title,
       author: currentData.author,
       publisher: currentData.publisher ?? "unknown",
       publishedDate: currentData.publishedDate ?? "unknown",
-      bookCover: currentData.bookCover ?? "", // 이미지 없으면 빈 문자열
+      bookCover: currentData.bookCover ?? "",
       music: currentSong?.title || "",
       artist: currentSong?.artist || "",
       keyword: selectedKeywords,
@@ -185,10 +202,9 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
     }
   };
 
-  // 북마크 핸들러 (히스토리 저장 후 북마크 저장까지 연계)
+  // 북마크 핸들러
   const handleBookmark = async () => {
-    // 1) 로그인/입력 가드
-    if (!isAuthed || !userId) {
+    if (!isAuthed || !userId || userId === "guest") {
       alert("로그인 시 사용 가능한 기능입니다!");
       return;
     }
@@ -197,9 +213,8 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
       return;
     }
 
-    // 2) 히스토리 저장 payload (userId 포함)
     const historyData = {
-      userId, 
+      userId,
       content: inputValue,
       book: currentData.title,
       author: currentData.author,
@@ -209,11 +224,10 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
       music: currentSong?.title || "",
       artist: currentSong?.artist || "",
       keyword: selectedKeywords,
-      genre: selectedGenres, // 배열 유지
+      genre: selectedGenres,
     };
 
     try {
-      // 3) 히스토리 저장 (프록시 상대경로)
       const historyRes = await fetch("/api/history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -227,7 +241,6 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
         throw new Error(historyJson?.message || "히스토리 저장 실패");
       }
 
-      // 4) 북마크 저장 (userId로)
       const bookmarkRes = await fetch("/api/bookmarks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -238,7 +251,6 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
         throw new Error(errorRes.message || "북마크 저장 실패");
       }
 
-      // 5) 상태/UI 갱신
       setIsBookmarked(true);
       setShowBookmark(true);
       setToast("북마크에 저장되었습니다!");
@@ -258,11 +270,10 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
           onClose={() => setShowPopup(false)}
           onConfirm={() => {
             setShowPopup(false);
-            navigate(isAuthed ? "/mypage" : "/login"); 
+            navigate(isAuthed ? "/mypage" : "/login");
           }}
         />
       )}
-
 
       {showPlaylist && <MainPlaylistPopup onClose={() => setShowPlaylist(false)} data={musicList} />}
 
@@ -416,7 +427,6 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
                     <h4>{currentData?.title ?? "-"}</h4>
                     <M.BookInfoWrap>
                       <h5>{currentData?.author ?? "-"}</h5>
-                      {/* <small style={{ color: "#787878" }}>{currentData?.publisher ?? "-"}</small> */}
                     </M.BookInfoWrap>
                   </M.BookInfoWrapper>
                 </M.BookmarkInfoWrap>
@@ -431,3 +441,4 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
 };
 
 export default MainContainer;
+
