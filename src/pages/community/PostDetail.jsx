@@ -11,7 +11,6 @@ const PostDetail = () => {
 
   // 좋아요 토글 버튼 (UI용)
   const [liked, setLiked] = useState(false);
-  const [musicLiked, setMusicLiked] = useState(false);
 
   // 1차: 라우팅 state로 넘어온 post
   const initialPost = location.state?.post || null;
@@ -129,14 +128,7 @@ const PostDetail = () => {
 
         <Post.MusicRow>
           <Post.Music>
-            <Post.Icon onClick={() => setMusicLiked((prev) => !prev)}>
-              <img
-                src={musicLiked ? "/assets/images/icons/svg/like=on.svg" : "/assets/images/icons/svg/like=off.svg"}
-                alt="like"
-              />
-            </Post.Icon>
             <span role="img" aria-label="music">🎵</span>
-            {/* ✅ 음악 필드 교체 (music → musicTitle, artist → musicArtist) */}
             <span className="music-name">{view.musicTitle}</span>
             <span className="artist">{view.musicArtist}</span>
           </Post.Music>

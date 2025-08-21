@@ -24,9 +24,9 @@ const CommunityPopularCard=({ data, onClick }) => {
           </Card.TitleWrapper>
         </Card.LeftInfo>
         <Card.RightInfo>
-          <Card.LikeIcon src="../assets/images/icons/svg/like.svg" alt="like" />
+          <Card.LikeIcon src="../assets/images/icons/svg/thumb=off.svg" alt="like" />
           <span>{likes}</span>
-          <Card.CommentIcon src="../assets/images/icons/comment.png" alt="comment" />
+          <Card.CommentIcon src="../assets/images/icons/svg/comment.svg" alt="comment" />
           <span>{comments}</span>
         </Card.RightInfo>
       </Card.Header>
@@ -35,9 +35,7 @@ const CommunityPopularCard=({ data, onClick }) => {
       <Card.Divider />
       <Card.MusicInfo>
         <Card.MusicLeft>
-          <span role="img" aria-label="like">
-            ❤️
-          </span>
+
           <span role="img" aria-label="music">
             🎵
           </span>

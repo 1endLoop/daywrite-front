@@ -1,123 +1,146 @@
-import React from 'react';
-import styled from 'styled-components';
-import CommunityList from "./CommunityList";
+// src/pages/community/CommunityHome.jsx
+import React, { useEffect, useMemo, useState } from "react";
+import styled from "styled-components";
 import CommunityCard from "./CommunityCard";
-import CommunityPopularCard from './CommunityPopularCard';
+import CommunityPopularCard from "./CommunityPopularCard";
 import { useNavigate } from "react-router-dom";
-
-const dummyData = [
-  {
-    id: 1,
-    content:
-      "여러 변덕스러운 우연이, 지쳐버린 타인이, 그리고 누구보다 자신이 자신에게 모질게 굴 수 있으니 마음 단단히 먹기 바랍니다. 나는 커서 어떻게 살까, 오래된 질문을 오늘부터의 매일이 대답해줍니다. 취업 준비, 결혼 준비, 육아, 교육, 승진, 은퇴, 노후 준비를 거쳐 어느 병원 그럴듯한 1인실에서 사망하기 위한 준비에 산만해지지 않기를 바랍니다. 무례와 혐오와 경쟁과 분열과 비교와 나태와 허무의 달콤함에 길들지 말길, 의미와 무의미의 온갖 폭력을 이겨내고 하루하루를 온전히 경험하길, 그 끝에서 오래 기다리고 있는 낯선 나를 아무 아쉬움 없이 맞이하길 바랍니다.",
-    title: "서울대학교 졸업식 축사",
-    author: "허준이",
-    music: "Love on Top",
-    artist: "John Canada",
-    profileImg: "",
-    likes: 121,
-    comments: 36,
-  },
-  {
-    id: 2,
-    content:
-      "여러 변덕스러운 우연이, 지쳐버린 타인이, 그리고 누구보다 자신이 자신에게 모질게 굴 수 있으니 마음 단단히 먹기 바랍니다. 나는 커서 어떻게 살까, 오래된 질문을 오늘부터의 매일이 대답해줍니다. 취업 준비, 결혼 준비, 육아, 교육, 승진, 은퇴, 노후 준비를 거쳐 어느 병원 그럴듯한 1인실에서 사망하기 위한 준비에 산만해지지 않기를 바랍니다. 무례와 혐오와 경쟁과 분열과 비교와 나태와 허무의 달콤함에 길들지 말길, 의미와 무의미의 온갖 폭력을 이겨내고 하루하루를 온전히 경험하길, 그 끝에서 오래 기다리고 있는 낯선 나를 아무 아쉬움 없이 맞이하길 바랍니다.",
-    title: "내가 틀릴 수도 있습니다",
-    author: "조짱희",
-    music: "Rainy Days",
-    artist: "Lee Moon",
-    profileImg: "",
-    likes: 98,
-    comments: 24,
-  },
-  {
-    id: 3,
-    content:
-      "여러 변덕스러운 우연이, 지쳐버린 타인이, 그리고 누구보다 자신이 자신에게 모질게 굴 수 있으니 마음 단단히 먹기 바랍니다. 나는 커서 어떻게 살까, 오래된 질문을 오늘부터의 매일이 대답해줍니다. 취업 준비, 결혼 준비, 육아, 교육, 승진, 은퇴, 노후 준비를 거쳐 어느 병원 그럴듯한 1인실에서 사망하기 위한 준비에 산만해지지 않기를 바랍니다. 무례와 혐오와 경쟁과 분열과 비교와 나태와 허무의 달콤함에 길들지 말길, 의미와 무의미의 온갖 폭력을 이겨내고 하루하루를 온전히 경험하길, 그 끝에서 오래 기다리고 있는 낯선 나를 아무 아쉬움 없이 맞이하길 바랍니다.",
-    title: "서울대학교 졸업식 축사",
-    author: "허준이",
-    music: "Love on Top",
-    artist: "John Canada",
-    profileImg: "",
-    likes: 121,
-    comments: 36,
-  },
-  {
-    id: 4,
-    content:
-      "여러 변덕스러운 우연이, 지쳐버린 타인이, 그리고 누구보다 자신이 자신에게 모질게 굴 수 있으니 마음 단단히 먹기 바랍니다. 나는 커서 어떻게 살까, 오래된 질문을 오늘부터의 매일이 대답해줍니다. 취업 준비, 결혼 준비, 육아, 교육, 승진, 은퇴, 노후 준비를 거쳐 어느 병원 그럴듯한 1인실에서 사망하기 위한 준비에 산만해지지 않기를 바랍니다. 무례와 혐오와 경쟁과 분열과 비교와 나태와 허무의 달콤함에 길들지 말길, 의미와 무의미의 온갖 폭력을 이겨내고 하루하루를 온전히 경험하길, 그 끝에서 오래 기다리고 있는 낯선 나를 아무 아쉬움 없이 맞이하길 바랍니다.",
-    title: "내가 틀릴 수도 있습니다",
-    author: "조짱희",
-    music: "Rainy Days",
-    artist: "Lee Moon",
-    profileImg: "",
-    likes: 98,
-    comments: 24,
-  },
-  {
-    id: 5,
-    content:
-      "여러 변덕스러운 우연이, 지쳐버린 타인이, 그리고 누구보다 자신이 자신에게 모질게 굴 수 있으니 마음 단단히 먹기 바랍니다. 나는 커서 어떻게 살까, 오래된 질문을 오늘부터의 매일이 대답해줍니다. 취업 준비, 결혼 준비, 육아, 교육, 승진, 은퇴, 노후 준비를 거쳐 어느 병원 그럴듯한 1인실에서 사망하기 위한 준비에 산만해지지 않기를 바랍니다. 무례와 혐오와 경쟁과 분열과 비교와 나태와 허무의 달콤함에 길들지 말길, 의미와 무의미의 온갖 폭력을 이겨내고 하루하루를 온전히 경험하길, 그 끝에서 오래 기다리고 있는 낯선 나를 아무 아쉬움 없이 맞이하길 바랍니다.",
-    title: "내가 틀릴 수도 있습니다",
-    author: "조짱희",
-    music: "Rainy Days",
-    artist: "Lee Moon",
-    profileImg: "",
-    likes: 98,
-    comments: 24,
-  },
- 
-  
-];
+import { fetchCommunityPublic } from "../../api/communityApi";
 
 const CommunityHome = () => {
   const navigate = useNavigate();
 
+  // 상단 인기 4개
+  const [popularTop, setPopularTop] = useState([]);
+  const [popLoading, setPopLoading] = useState(true);
+  const [popError, setPopError] = useState(null);
+
+  // 전체 목록 (정렬 토글)
+  const [sort, setSort] = useState("popular"); // 'popular' | 'recent'
+  const [items, setItems] = useState([]);
+  const [listLoading, setListLoading] = useState(true);
+  const [listError, setListError] = useState(null);
+
+  // 상단 인기 4개: 항상 popular 기준
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        setPopLoading(true);
+        const res = await fetchCommunityPublic("popular");
+        if (!alive) return;
+        const arr = Array.isArray(res?.items) ? res.items.slice(0, 4) : [];
+        setPopularTop(arr);
+        setPopError(null);
+      } catch (e) {
+        setPopError("인기 글을 불러오지 못했습니다.");
+        setPopularTop([]);
+      } finally {
+        if (alive) setPopLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // 하단 전체 목록: 정렬 토글 반영
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        setListLoading(true);
+        const res = await fetchCommunityPublic(sort);
+        if (!alive) return;
+        setItems(Array.isArray(res?.items) ? res.items : []);
+        setListError(null);
+      } catch (e) {
+        setItems([]);
+        setListError("목록을 불러오지 못했습니다.");
+      } finally {
+        if (alive) setListLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [sort]);
+
+  // ✅ 상단 카드용 안전 매핑 (music / artist, nickname, profileImg 호환)
+  const popularMapped = useMemo(
+    () =>
+      popularTop.map((item) => ({
+        ...item,
+        music: item.musicTitle ?? item.music ?? "",
+        artist: item.musicArtist ?? item.artist ?? "",
+        nickname: item.nickname ?? "익명",
+        author: item.nickname ?? item.author ?? "익명",
+        profileImg: item.profileImg ?? item.profileImageUrl ?? "/assets/images/profiles/profile.jpg",
+      })),
+    [popularTop]
+  );
+
   return (
     <Container>
+      {/* 상단: 인기 글 4개 */}
       <TopRow>
         <Left>
           <Title>인기 글</Title>
         </Left>
-          <SearchBarWrapper>
+        <SearchBarWrapper>
           <input type="text" placeholder="검색어를 입력하세요" />
-          </SearchBarWrapper>
-        <WriteButton onClick={()=>navigate(`/community/write`)}>나만의 글 쓰기</WriteButton>
+        </SearchBarWrapper>
+        <WriteButton onClick={() => navigate(`/community/write`)}>나만의 글 쓰기</WriteButton>
       </TopRow>
-      <CardPopularList>
-        {dummyData.map((item) => (
-          <CommunityPopularCard 
-          key={item.id} 
-          data={item} 
-          onClick={() => navigate(`/community/${item.id}`, { state: { post: item } })}
-          />
-        ))}
-      </CardPopularList>
 
+      {popError && <InfoText>{popError}</InfoText>}
+      {popLoading ? (
+        <InfoText>불러오는 중…</InfoText>
+      ) : (
+        <CardPopularList>
+          {popularMapped.map((item) => (
+            <CommunityPopularCard
+              key={item._id || item.id}
+              data={item}
+              onClick={() => navigate(`/community/${item._id || item.id}`, { state: { post: item } })}
+            />
+          ))}
+        </CardPopularList>
+      )}
+
+      {/* 하단: 전체 글 목록 */}
       <TopRow>
         <Left>
           <Title>전체 글</Title>
           <SortMenu>
-            <button className="active">인기순</button>
+            <button className={sort === "popular" ? "active" : ""} onClick={() => setSort("popular")}>
+              인기순
+            </button>
             <span className="divider">|</span>
-            <button>최신순</button>
+            <button className={sort === "recent" ? "active" : ""} onClick={() => setSort("recent")}>
+              최신순
+            </button>
           </SortMenu>
         </Left>
-        <AllViewBtn>
-          <button onClick={()=>{navigate(`/community/list`)}}>전체보기</button>
-          <img src="assets/images/icons/right.png" alt="" />
+        <AllViewBtn onClick={() => navigate(`/community/list`)}>
+          <button>전체보기</button>
+          <img src="assets/images/icons/right.png" alt="전체보기" />
         </AllViewBtn>
       </TopRow>
-      <CardList>
-        {dummyData.map((item) => (
-          <CommunityCard 
-          key={item.id} 
-          data={item} 
-          onClick={() => navigate(`/community/${item.id}`, { state: { post: item } })}
-          />
-        ))}
-      </CardList>
-    
+
+      {listError && <InfoText>{listError}</InfoText>}
+      {listLoading ? (
+        <InfoText>불러오는 중…</InfoText>
+      ) : (
+        <CardList>
+          {items.map((item) => (
+            <CommunityCard
+              key={item._id || item.id}
+              data={item}
+              onClick={() => navigate(`/community/${item._id || item.id}`, { state: { post: item } })}
+            />
+          ))}
+        </CardList>
+      )}
     </Container>
   );
 };
@@ -163,6 +186,7 @@ const SortMenu = styled.div`
     font-size: 14px;
   }
 `;
+
 const SearchBarWrapper = styled.div`
   input {
     width: 260px;
@@ -195,37 +219,42 @@ const CardList = styled.div`
   gap: 32px;
 `;
 
-const CardPopularList= styled.div`
+const CardPopularList = styled.div`
   display: flex;
   gap: 40px;
-  margin-bottom:50px;
-  overflow:hidden;
+  margin-bottom: 50px;
+  overflow: hidden;
 `;
 
-const AllViewBtn=styled.div`
-  display:flex;
+const AllViewBtn = styled.div`
+  display: flex;
   align-items: center;
-  text-align:center;
+  text-align: center;
   cursor: pointer;
-  height:25px;
-  
-  button{
+  height: 25px;
+
+  button {
     font-size: 14px;
     background: none;
     border: none;
-    padding : 0px;
+    padding: 0px;
     display: flex;
     align-items: center;
-    line-height: 1
+    line-height: 1;
     justify-content: center;
-    top: -3px; /* 또는 -1px: 글씨가 너무 아래에 있으면 */
   }
 
-  img{
-    width:25px;
-    height:25px;
+  img {
+    width: 25px;
+    height: 25px;
     display: block;
   }
-`
+`;
+
+const InfoText = styled.div`
+  color: #888;
+  font-size: 14px;
+  margin: 8px 0 20px;
+`;
 
 export default CommunityHome;

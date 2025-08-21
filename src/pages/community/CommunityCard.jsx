@@ -51,12 +51,6 @@ const CommunityCard = ({ data, onClick }) => {
 
       <Card.MusicInfo>
         <Card.MusicLeft>
-          <Card.Icon onClick={() => setMusicLiked((prev) => !prev)}>
-            <img
-              src={musicLiked ? "/assets/images/icons/svg/like=on.svg" : "/assets/images/icons/svg/like=off.svg"}
-              alt="like"
-            />
-          </Card.Icon>
           <span role="img" aria-label="music">
             🎵
           </span>
