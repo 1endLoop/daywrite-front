@@ -80,11 +80,11 @@ Card.RightInfo = styled.div`
 `;
 
 Card.LikeIcon = styled.img`
-  width: 16px;
+  width: 20px;
 `;
 
 Card.CommentIcon = styled.img`
-  width: 16px;
+  width: 20px;
 `;
 
 

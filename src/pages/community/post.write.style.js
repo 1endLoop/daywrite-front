@@ -1,4 +1,7 @@
+// src/pages/community/post.write.style.js
 import styled from "styled-components";
+
+const ORANGE = "#f96f3d";
 
 const S = {};
 
@@ -6,7 +9,7 @@ S.Container = styled.div`
   width: 100%;
   max-width: 1120px;
   margin: 45px auto 0;
-  overflow: hidden; // 스크롤 방지
+  padding: 0 16px;
 `;
 
 S.TopBar = styled.div`
@@ -18,7 +21,7 @@ S.TopBar = styled.div`
 S.TitleGroup = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px; // ←과 텍스트 간격 조정
+  gap: 12px;
 `;
 
 S.Back = styled.div`
@@ -38,27 +41,34 @@ S.ButtonGroup = styled.div`
 
 S.Button = styled.button`
   padding: 8px 16px;
-  background-color: ${({ primary }) => (primary ? "#f96f3d" : "#fff")};
-  color: ${({ primary }) => (primary ? "#fff" : "#f96f3d")};
-  border: 1px solid #f96f3d;
+  background-color: ${({ $primary }) => ($primary ? ORANGE : "#fff")};
+  color: ${({ $primary }) => ($primary ? "#fff" : ORANGE)};
+  border: 1px solid ${ORANGE};
   border-radius: 6px;
   cursor: pointer;
 `;
 
-S.Form = styled.form`
-  margin-top: 60px;
+S.TopRow = styled.div`
+  margin-top: 24px;
+  margin-bottom: 40px;
 `;
+
+S.Form = styled.form``;
 
 S.Row = styled.div`
   display: flex;
   flex-direction: column;
-  margin-bottom: 40px;
+  margin-bottom: 28px;
 `;
 
 S.RowGroup = styled.div`
   display: flex;
-  gap: 24px; // 제목과 저자 사이 간격
-  margin-bottom: 40px;
+  gap: 24px;
+  margin-bottom: 28px;
+  @media (max-width: 800px) {
+    flex-direction: column;
+    gap: 16px;
+  }
 `;
 
 S.HalfRow = styled.div`
@@ -68,8 +78,8 @@ S.HalfRow = styled.div`
 `;
 
 S.Label = styled.label`
-  margin-bottom: 12px;
-  font-size: 20px;
+  margin-bottom: 10px;
+  font-size: 16px;
   font-weight: 600;
 `;
 
@@ -77,22 +87,20 @@ S.Input = styled.input`
   font-size: 15px;
   padding: 14px;
   border: 1px solid #ccc;
-  /* border-radius: 4px; */
 `;
 
 S.TextArea = styled.textarea`
   font-size: 15px;
   padding: 14px;
   border: 1px solid #ccc;
-  /* border-radius: 6px; */
-  min-height: 120px;
+  min-height: 140px;
   resize: vertical;
 `;
 
 S.CheckGroup = styled.div`
   display: flex;
   font-size: 16px;
-  gap: 10px;
+  gap: 16px;
   margin-top: 7px;
 `;
 
