@@ -157,6 +157,7 @@ Post.InputWrapper = styled.div`
     padding: 10px;
     border: 1px solid #ddd;
     border-radius: 4px 0 0 4px;
+    outline: none;
   }
 
   button {
