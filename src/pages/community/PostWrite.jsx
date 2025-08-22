@@ -1,5 +1,4 @@
-// src/pages/community/PostWrite.jsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, shallowEqual } from "react-redux";
 import S from "./post.write.style";
@@ -92,7 +91,7 @@ const PostWrite = () => {
       await createPost(payload);
 
       // 임시저장은 "내가 쓴 글(임시저장 탭)"로 이동
-      navigate("/community/mine?tab=temp", { replace: true });
+      navigate("/community/my?tab=temp", { replace: true });
     } catch (err) {
       console.error(err);
       alert("임시저장 중 오류가 발생했어요.");
@@ -132,7 +131,7 @@ const PostWrite = () => {
             <S.Input name="title" value={form.title} onChange={onChange} placeholder={titlePlaceholder} required />
           </S.HalfRow>
           <S.HalfRow>
-            <S.Label>저자{isOriginal ? " (창작글은 비활성)" : " *"}</S.Label>
+            <S.Label>저자{isOriginal ? "" : " *"}</S.Label>
             <S.Input
               name="author"
               value={form.author}
@@ -156,16 +155,16 @@ const PostWrite = () => {
               name="musicTitle"
               value={form.musicTitle}
               onChange={onChange}
-              placeholder="함께 들으면 좋을 음악 제목"
+              placeholder="함께 들으면 좋을 음악의 제목을 입력해 주세요"
             />
           </S.HalfRow>
           <S.HalfRow>
-            <S.Label>가수</S.Label>
+            <S.Label>아티스트</S.Label>
             <S.Input
               name="musicArtist"
               value={form.musicArtist}
               onChange={onChange}
-              placeholder="가수명을 입력해 주세요"
+              placeholder="아티스트명을 입력해 주세요"
             />
           </S.HalfRow>
         </S.RowGroup>

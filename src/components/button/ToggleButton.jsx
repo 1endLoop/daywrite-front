@@ -1,16 +1,27 @@
-// components/ToggleButton.jsx
-import React from "react";
 import styled from "styled-components";
 
 const ToggleButton = ({ isTemp, onToggle }) => {
   return (
-    <ToggleWrapper>
-      <Slider active={isTemp} />
-      <Option active={isTemp} onClick={() => onToggle(true)} position="left">
-        임시저장
+    <ToggleWrapper role="tablist" aria-label="내 글 탭">
+      {/* 왼쪽(전체글) 활성 시 슬라이더가 왼쪽, 임시저장 활성 시 오른쪽 */}
+      <Slider aria-hidden="true" $leftActive={!isTemp} />
+
+      <Option
+        role="tab"
+        aria-selected={!isTemp}
+        $active={!isTemp}
+        onClick={() => onToggle(false)}
+      >
+        전체글
       </Option>
-      <Option active={!isTemp} onClick={() => onToggle(false)} position="right">
-        전체보기
+
+      <Option
+        role="tab"
+        aria-selected={isTemp}
+        $active={isTemp}
+        onClick={() => onToggle(true)}
+      >
+        임시저장
       </Option>
     </ToggleWrapper>
   );
@@ -18,14 +29,16 @@ const ToggleButton = ({ isTemp, onToggle }) => {
 
 export default ToggleButton;
 
-// ✅ 스타일 영역
+
+/* ==================== styles ==================== */
+
 const ToggleWrapper = styled.div`
   font-family: Pretendard;
   font-weight: 500;
   position: relative;
   width: 160px;
   height: 36px;
-  background-color: #f96f3d;
+  background-color: #f96f3d; 
   border-radius: 999px;
   display: flex;
   justify-content: space-between;
@@ -38,7 +51,7 @@ const ToggleWrapper = styled.div`
 const Slider = styled.div`
   position: absolute;
   top: 4px;
-  left: ${({ active }) => (active ? "4px" : "calc(50%)")};
+  left: ${({ $leftActive }) => ($leftActive ? "4px" : "calc(50%)")};
   width: calc(50% - 5px);
   height: 28px;
   background-color: #ffffff;
@@ -56,8 +69,8 @@ const Option = styled.div`
   justify-content: center;
   font-size: 15px;
   font-weight: 500;
-  color: ${({ active }) => (active ? "#f96f3d" : "#ffffff")};
-  z-index: 2;
+  color: ${({ $active }) => ($active ? "#f96f3d" : "#ffffff")}; 
+  z-index: 2;        /* 슬라이더 위에 보이도록 */
   user-select: none;
   position: relative;
   white-space: nowrap;

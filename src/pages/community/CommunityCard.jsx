@@ -1,12 +1,12 @@
-// src/pages/community/CommunityCard.jsx
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Card from "./community.card.style";
+import Dropdown from "../archive/dropdown.style";
+import useClickOutside from "../../modules/hooks/useClickOutside";
 
-const CommunityCard = ({ data, onClick }) => {
+const CommunityCard = ({ data, onClick, onEdit, onDelete, showMenu = false }) => {
   const {
     content = "",
     title = "",
-    // refAuthor 는 표시 보류 (추후 참조글 배지/표시 예정)
     musicTitle = "",
     musicArtist = "",
     profileImg = data?.profileImg || data?.profileImageUrl || "",
@@ -16,7 +16,9 @@ const CommunityCard = ({ data, onClick }) => {
   } = data;
 
   const [liked, setLiked] = useState(false);
-  const [musicLiked, setMusicLiked] = useState(false);
+  const [openMenu, setOpenMenu] = useState(false);
+  const menuRef = useRef(null);
+  useClickOutside(menuRef, () => setOpenMenu(false));
 
   return (
     <Card.Card>
@@ -57,6 +59,34 @@ const CommunityCard = ({ data, onClick }) => {
           <span className="music-name">{musicTitle}</span>
           <span className="artist">{musicArtist}</span>
         </Card.MusicLeft>
+
+        {showMenu && (
+          <Card.MusicRight ref={menuRef} onClick={(e) => e.stopPropagation()}>
+            <Card.MoreBtn onClick={() => setOpenMenu((p) => !p)}>⋯</Card.MoreBtn>
+            {openMenu && (
+              <Dropdown.Wrapper>
+                <Dropdown.Menu>
+                  <Dropdown.Item
+                    onClick={() => {
+                      onEdit?.(data);
+                      setOpenMenu(false);
+                    }}
+                  >
+                    수정하기
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    onClick={() => {
+                      onDelete?.(data);
+                      setOpenMenu(false);
+                    }}
+                  >
+                    삭제하기
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown.Wrapper>
+            )}
+          </Card.MusicRight>
+        )}
       </Card.MusicInfo>
     </Card.Card>
   );
