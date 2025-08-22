@@ -1,4 +1,3 @@
-// src/api/communityApi.js
 import axios from "axios";
 
 const API = axios.create({
@@ -43,7 +42,7 @@ export const deletePost = async (id, userId) => {
     params: userId ? { userId } : {},
   });
 
-  // ✅ 성공 판정
+  // 성공 판정
   if (res.status === 204) return true;
   const d = res.data ?? {};
   if (d.success === true) return true;

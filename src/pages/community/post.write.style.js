@@ -1,4 +1,3 @@
-// src/pages/community/post.write.style.js
 import styled from "styled-components";
 
 const ORANGE = "#f96f3d";
@@ -87,6 +86,19 @@ S.Input = styled.input`
   font-size: 15px;
   padding: 14px;
   border: 1px solid #ccc;
+  transition: border-color 0.15s ease;
+
+  &:focus {
+    outline: none;         
+    border-color: ${ORANGE};  
+    box-shadow: none;    
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: ${ORANGE};
+    box-shadow: none;
+  }
 `;
 
 S.TextArea = styled.textarea`
@@ -95,6 +107,19 @@ S.TextArea = styled.textarea`
   border: 1px solid #ccc;
   min-height: 140px;
   resize: vertical;
+  transition: border-color 0.15s ease;
+
+  &:focus {
+    outline: none;
+    border-color: ${ORANGE};   /* ✅ 색상만 변경 */
+    box-shadow: none;
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: ${ORANGE};
+    box-shadow: none;
+  }
 `;
 
 S.CheckGroup = styled.div`
