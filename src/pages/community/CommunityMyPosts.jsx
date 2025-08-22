@@ -126,16 +126,12 @@ const Left = styled.div`
 `;
 
 const WriteButton = styled.button`
-  font-family: Pretendard;
-  font-weight: 500;
   background-color: #ff6f3f;
-  width: 110px;
-  height: 36px;
   color: white;
   font-size: 14px;
   padding: 8px 14px;
   border: none;
-  border-radius: 8px;
+  border-radius: 4px;
   cursor: pointer;
 `;
 

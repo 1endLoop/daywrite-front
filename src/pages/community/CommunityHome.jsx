@@ -1,4 +1,3 @@
-// src/pages/community/CommunityHome.jsx
 import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import CommunityCard from "./CommunityCard";
@@ -17,12 +16,41 @@ const CommunityHome = () => {
   const rawUser = auth.user || auth.data || auth.profile || auth.currentUser || null;
   const userId = rawUser?._id || rawUser?.id || rawUser?.userId || null;
 
-  const ensureLogin = () => {
+  // 토스트 (반복 노출 지원)
+  const [toast, setToast] = useState(null);
+  const [toastId, setToastId] = useState(0);
+  const showToast = (message, type = "success") => {
+    setToastId((v) => v + 1);
+    setToast({ id: Date.now() + Math.random(), message, type });
+  };
+  const hideToast = () => setToast(null);
+
+  // ✅ 분리된 로그인 가드
+  const requireLoginToast = () => {
     if (!userId) {
-      setToast({ message: "로그인 시 사용할 수 있어요!", type: "error" });
+      showToast("로그인 시 사용할 수 있어요!", "error");
       return false;
     }
     return true;
+  };
+  const requireLoginAlert = () => {
+    if (!userId) {
+      window.alert("로그인 시 사용할 수 있어요!");
+      return false;
+    }
+    return true;
+  };
+
+  // 글쓰기: 알럿 가드
+  const goWrite = () => {
+    if (!requireLoginAlert()) return;
+    navigate(`/community/write`);
+  };
+
+  // (필요 시) 내가 쓴 글: 알럿 가드
+  const goMyPosts = () => {
+    if (!requireLoginAlert()) return;
+    navigate(`/community/mine`);
   };
 
   // 상단 인기 4개
@@ -35,11 +63,6 @@ const CommunityHome = () => {
   const [items, setItems] = useState([]);
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState(null);
-
-  // 토스트
-  const [toast, setToast] = useState(null);
-  const showToast = (message, type = "success") => setToast({ message, type });
-  const hideToast = () => setToast(null);
 
   // 상단 인기 4 로드
   useEffect(() => {
@@ -64,7 +87,7 @@ const CommunityHome = () => {
     };
   }, [userId]);
 
-  // Top4 재계산 유틸 (병합 순서 주의: currentTop 먼저 → list로 덮어쓰기)
+  // Top4 재계산 유틸
   const recomputeTop4 = (currentTop, list) => {
     const map = new Map();
     [...currentTop, ...list].forEach((it) => {
@@ -74,7 +97,9 @@ const CommunityHome = () => {
     });
     const merged = Array.from(map.values());
     merged.sort(
-      (a, b) => (b.likes ?? 0) - (a.likes ?? 0) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      (a, b) =>
+        (b.likes ?? 0) - (a.likes ?? 0) ||
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
     return merged.slice(0, 4);
   };
@@ -94,24 +119,28 @@ const CommunityHome = () => {
     }
   };
   useEffect(() => {
-    loadList(); /* eslint-disable-next-line */
+    loadList(); // eslint-disable-next-line
   }, [sort, userId]);
 
-  // 좋아요 토글(상/하 동기화 + Top4 재계산)
+  // 좋아요: 토스트 가드
   const handleToggleLike = async (postId) => {
-    if (!ensureLogin()) return;
+    if (!requireLoginToast()) return;
     try {
       const res = await toggleLike(postId, userId); // { liked, likes }
       const { liked, likes } = res;
 
-      // (A) 상단 배열 안에 존재한다면 즉시 값만 동기화
+      // (A) 상단 배열 동기화
       setPopularTop((prev) => syncLikeInArray(prev, postId, liked, likes));
 
       // (B) 하단 목록 동기화 + 인기순이면 재정렬 + Top4 재계산
       setItems((prev) => {
         const next = syncLikeInArray(prev, postId, liked, likes);
         if (sort === "popular") {
-          next.sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0) || new Date(b.createdAt) - new Date(a.createdAt));
+          next.sort(
+            (a, b) =>
+              (b.likes ?? 0) - (a.likes ?? 0) ||
+              new Date(b.createdAt) - new Date(a.createdAt)
+          );
         }
         setPopularTop((topPrev) => recomputeTop4(topPrev, next));
         return [...next];
@@ -122,11 +151,14 @@ const CommunityHome = () => {
     }
   };
 
+  // 수정/삭제는 기존 UX 유지(토스트 가드)
   const handleEdit = (post) => {
+    if (!requireLoginToast()) return;
     navigate("/community/write", { state: { mode: "edit", post } });
   };
 
   const handleDelete = async (post) => {
+    if (!requireLoginToast()) return;
     if (!post?._id) return;
     const ok = window.confirm("정말 삭제할까요?");
     if (!ok) return;
@@ -158,17 +190,28 @@ const CommunityHome = () => {
 
   return (
     <Container>
-      {toast && <Toast type={toast.type} message={toast.message} onClose={hideToast} duration={2000} />}
+      {toast && (
+        <Toast
+          key={toast.id ?? toastId}  // 같은 메시지도 반복 노출
+          type={toast.type}
+          message={toast.message}
+          onClose={hideToast}
+          duration={2000}
+        />
+      )}
 
       {/* 상단: 인기 글 4개 */}
       <TopRow>
         <Left>
           <Title>인기 글</Title>
         </Left>
-        <SearchBarWrapper>
-          <input type="text" placeholder="검색어를 입력하세요" />
-        </SearchBarWrapper>
-        <WriteButton onClick={() => navigate(`/community/write`)}>나만의 글 쓰기</WriteButton>
+
+        <RightControls>
+          {/* <SearchBarWrapper>
+            <input type="text" placeholder="검색어를 입력하세요" />
+          </SearchBarWrapper> */}
+          <WriteButton onClick={goWrite}>나만의 글 쓰기</WriteButton>
+        </RightControls>
       </TopRow>
 
       {popError && <InfoText>{popError}</InfoText>}
@@ -247,6 +290,11 @@ const Left = styled.div`
   align-items: center;
   gap: 20px;
 `;
+const RightControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
 const SortMenu = styled.div`
   display: flex;
   align-items: center;
@@ -285,6 +333,7 @@ const WriteButton = styled.button`
   border-radius: 4px;
   cursor: pointer;
 `;
+
 const Title = styled.h2`
   font-size: 22px;
   font-weight: 700;
@@ -295,12 +344,16 @@ const CardList = styled.div`
   flex-direction: column;
   gap: 32px;
 `;
+
 const CardPopularList = styled.div`
-  display: flex;
-  gap: 40px;
-  margin-bottom: 50px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 40px;
+  /* gap: 40px; */
   overflow: hidden;
 `;
+
 const AllViewBtn = styled.div`
   display: flex;
   align-items: center;

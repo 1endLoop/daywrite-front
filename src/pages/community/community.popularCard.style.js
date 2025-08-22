@@ -3,8 +3,8 @@ import styled from "styled-components";
 const Card = {}
 
 Card.Card = styled.div`
-  width:205px;
-  min-width:205px;
+  width:218px;
+  min-width:218px;
   background-color: #fff;
   padding: 24px 22px 24px 22px;
   border: 1px solid #e0e0e0;
@@ -74,9 +74,10 @@ Card.Author = styled.div`
 Card.RightInfo = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 13px;
   color: #444;
+  margin-right: 2px;
 `;
 
 Card.LikeIcon = styled.img`
