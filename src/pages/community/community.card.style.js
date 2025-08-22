@@ -7,7 +7,6 @@ Card.Card = styled.div`
   padding: 24px 22px 24px 22px;
   border: 1px solid #e0e0e0;
   border-radius: 5px;
-  /* box-shadow: 0 0 4px rgba(0, 0, 0, 0.08); */
   font-family: pretendard;
 `;
 
@@ -55,21 +54,10 @@ Card.Divider = styled.div`
   margin: 16px 0;
 `;
 
-Card.Title = styled.div`
-  font-size: 15px;
-  font-weight: 600;
-  color: #131313;
-`;
-
-Card.Author = styled.div`
-  font-size: 13px;
-  color: #888;
-`;
-
 Card.RightInfo = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px; /* 좋아요/댓글 묶음 사이 간격 넓힘 */
+  gap: 12px;
   font-size: 15px;
   color: #444;
 `;
@@ -90,12 +78,6 @@ Card.IconGroup = styled.div`
   }
 `;
 
-Card.RightGroup = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 5px; /* 아이콘과 숫자 간 간격 */
-`;
-
 Card.Icon = styled.div`
   cursor: pointer;
 `;
@@ -114,41 +96,6 @@ Card.Content = styled.p`
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: justify;
-`;
-
-Card.Divider = styled.div`
-  border: none;
-  border-top: 1px solid #e0e0e0;
-  margin: 0 0 20px 0;
-`;
-
-Card.MetaWrapper = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-Card.MetaLeft = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-
-  .title {
-    font-size: 14px;
-    color: #282828;
-    font-weight: 500;
-  }
-
-  .author {
-    font-size: 13px;
-    color: #787878;
-  }
-`;
-
-Card.MetaRight = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 14px;
 `;
 
 Card.MusicInfo = styled.div`
@@ -174,7 +121,24 @@ Card.MusicLeft = styled.div`
 `;
 
 Card.MusicRight = styled.div`
-  font-size: 16px;
+  position: relative;
+  display: flex;
+  align-items: center;
+`;
+
+Card.MoreBtn = styled.button`
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  color: #666;
+  padding: 4px 6px;
+  line-height: 1;
+  border-radius: 6px;
+
+  &:hover {
+    background: #f5f5f5;
+  }
 `;
 
 export default Card;

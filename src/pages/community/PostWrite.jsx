@@ -1,30 +1,51 @@
-// src/pages/community/PostWrite.jsx
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useSelector, shallowEqual } from "react-redux";
 import S from "./post.write.style";
 import PostTypeToggle from "../../components/button/PostTypeToggle";
-import { createPost } from "../../api/communityApi";
+import { createPost, updatePost } from "../../api/communityApi";
 
 const PostWrite = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
+  // 로그인 사용자
   const currentUser = useSelector((state) => state.user?.currentUser, shallowEqual);
   const userId = currentUser?._id || currentUser?.id || currentUser?.userId || null;
   const nickname = currentUser?.nickname || currentUser?.name || currentUser?.displayName || "익명";
   const profileImg = currentUser?.profileImageUrl || "/assets/images/profiles/profile.jpg";
-  
+
+  // 수정 모드 여부 + 전달된 post
+  const editPost = location.state?.mode === "edit" ? location.state?.post : null;
+  const isEdit = !!editPost;
+  const editStatus = editPost?.status || "published"; // 'draft' | 'published'
+
   // 글 타입: 창작글(true) / 참조글(false)
   const [isOriginal, setIsOriginal] = useState(true);
 
+  // 폼 상태
   const [form, setForm] = useState({
     title: "",
-    author: "", // 참조글일 때 책 저자
+    author: "", // 참조글일 때 책 저자 (refAuthor)
     content: "",
     musicTitle: "",
     musicArtist: "",
-    isPublic: true, // 공개 기본값
+    isPublic: true,
   });
+
+  // 수정 모드일 때 최초 1회 프리필
+  useEffect(() => {
+    if (!isEdit || !editPost) return;
+    setIsOriginal((editPost.type || "original") === "original");
+    setForm({
+      title: editPost.title || "",
+      author: editPost.refAuthor || "",
+      content: editPost.content || "",
+      musicTitle: editPost.musicTitle || "",
+      musicArtist: editPost.musicArtist || "",
+      isPublic: typeof editPost.isPublic === "boolean" ? editPost.isPublic : true,
+    });
+  }, [isEdit, editPost]);
 
   const onChange = (e) => {
     const { name, value, type } = e.target;
@@ -35,7 +56,6 @@ const PostWrite = () => {
   };
 
   const validate = (isDraft) => {
-    // 임시저장은 최소 검증: 제목만 체크, 참조글은 저자 생략 가능 (원하면 강화 가능)
     if (!form.title.trim()) {
       alert(isOriginal ? "글 제목을 입력해 주세요." : "책 제목을 입력해 주세요.");
       return false;
@@ -71,13 +91,15 @@ const PostWrite = () => {
     e.preventDefault();
     if (!validate(false)) return;
     try {
-      const payload = buildPayload("published");
-      await createPost(payload);
-
-      // 이동 규칙:
-      // 공개/저장 → 전체글 & 내글(저장) 모두 노출되지만, UX상 어디로 보낼 지는 정책에 따라.
-      // 여기서는 "내가 쓴 글(전체보기 탭)"로 이동.
-      navigate("/community/my", { replace: true });
+      if (isEdit) {
+        // 수정 모드: '저장'은 게시 상태로
+        const payload = buildPayload("published");
+        await updatePost(editPost._id, payload);
+      } else {
+        const payload = buildPayload("published");
+        await createPost(payload);
+      }
+      navigate("/community/my", { replace: true }); // 전체글 탭으로
     } catch (err) {
       console.error(err);
       alert("저장 중 오류가 발생했어요.");
@@ -88,11 +110,15 @@ const PostWrite = () => {
   const onTempSave = async () => {
     if (!validate(true)) return;
     try {
-      const payload = buildPayload("draft");
-      await createPost(payload);
-
-      // 임시저장은 "내가 쓴 글(임시저장 탭)"로 이동
-      navigate("/community/mine?tab=temp", { replace: true });
+      if (isEdit) {
+        // 수정 모드: '임시저장'은 draft 상태 유지/변경
+        const payload = buildPayload("draft");
+        await updatePost(editPost._id, payload);
+      } else {
+        const payload = buildPayload("draft");
+        await createPost(payload);
+      }
+      navigate("/community/my?tab=temp", { replace: true }); // 임시저장 탭으로
     } catch (err) {
       console.error(err);
       alert("임시저장 중 오류가 발생했어요.");
@@ -107,20 +133,25 @@ const PostWrite = () => {
       <S.TopBar>
         <S.TitleGroup>
           <S.Back onClick={() => navigate(-1)}>←</S.Back>
-          <S.Title>나만의 필사글 작성</S.Title>
+          <S.Title>{isEdit ? "나만의 필사글 수정" : "나만의 필사글 작성"}</S.Title>
         </S.TitleGroup>
 
         <S.ButtonGroup>
-          <S.Button type="button" onClick={onTempSave}>
-            임시저장
-          </S.Button>
+          {/* 수정 페이지에서는 임시저장 버튼 숨김 */}
+          {!isEdit && (
+            <S.Button type="button" onClick={onTempSave}>
+              임시저장
+            </S.Button>
+          )}
+
+          {/* 저장 버튼 라벨을 수정 모드에서는 '수정'으로 표기 */}
           <S.Button type="submit" form="postWriteForm" $primary>
-            저장
+            {isEdit ? "수정" : "저장"}
           </S.Button>
         </S.ButtonGroup>
       </S.TopBar>
 
-      {/* 타입 토글 */}
+      {/* 타입 토글 (수정 시에도 변경 가능. 변경 못 하게 하려면 disabled 처리하면 됨) */}
       <S.TopRow>
         <PostTypeToggle isOriginal={isOriginal} onToggle={setIsOriginal} />
       </S.TopRow>
@@ -132,7 +163,7 @@ const PostWrite = () => {
             <S.Input name="title" value={form.title} onChange={onChange} placeholder={titlePlaceholder} required />
           </S.HalfRow>
           <S.HalfRow>
-            <S.Label>저자{isOriginal ? " (창작글은 비활성)" : " *"}</S.Label>
+            <S.Label>저자{isOriginal ? "" : " *"}</S.Label>
             <S.Input
               name="author"
               value={form.author}
@@ -156,16 +187,16 @@ const PostWrite = () => {
               name="musicTitle"
               value={form.musicTitle}
               onChange={onChange}
-              placeholder="함께 들으면 좋을 음악 제목"
+              placeholder="함께 들으면 좋을 음악의 제목을 입력해 주세요"
             />
           </S.HalfRow>
           <S.HalfRow>
-            <S.Label>가수</S.Label>
+            <S.Label>아티스트</S.Label>
             <S.Input
               name="musicArtist"
               value={form.musicArtist}
               onChange={onChange}
-              placeholder="가수명을 입력해 주세요"
+              placeholder="아티스트명을 입력해 주세요"
             />
           </S.HalfRow>
         </S.RowGroup>
@@ -174,12 +205,10 @@ const PostWrite = () => {
           <S.Label>커뮤니티 공개 여부</S.Label>
           <S.CheckGroup>
             <label>
-              <input type="radio" name="isPublic" value="true" checked={form.isPublic === true} onChange={onChange} />{" "}
-              공개
+              <input type="radio" name="isPublic" value="true" checked={form.isPublic === true} onChange={onChange} /> 공개
             </label>
             <label>
-              <input type="radio" name="isPublic" value="false" checked={form.isPublic === false} onChange={onChange} />{" "}
-              비공개
+              <input type="radio" name="isPublic" value="false" checked={form.isPublic === false} onChange={onChange} /> 비공개
             </label>
           </S.CheckGroup>
         </S.Row>

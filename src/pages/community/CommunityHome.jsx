@@ -1,32 +1,76 @@
-// src/pages/community/CommunityHome.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import CommunityCard from "./CommunityCard";
 import CommunityPopularCard from "./CommunityPopularCard";
 import { useNavigate } from "react-router-dom";
-import { fetchCommunityPublic } from "../../api/communityApi";
+import { useSelector } from "react-redux";
+import { fetchCommunityPublic, deletePost, toggleLike } from "../../api/communityApi";
+import Toast from "../../components/Toast";
+import { syncLikeInArray } from "../../modules/likeSync";
 
 const CommunityHome = () => {
   const navigate = useNavigate();
+
+  // 로그인 사용자
+  const auth = useSelector((s) => s.user || s.auth || {});
+  const rawUser = auth.user || auth.data || auth.profile || auth.currentUser || null;
+  const userId = rawUser?._id || rawUser?.id || rawUser?.userId || null;
+
+  // 토스트 (반복 노출 지원)
+  const [toast, setToast] = useState(null);
+  const [toastId, setToastId] = useState(0);
+  const showToast = (message, type = "success") => {
+    setToastId((v) => v + 1);
+    setToast({ id: Date.now() + Math.random(), message, type });
+  };
+  const hideToast = () => setToast(null);
+
+  // ✅ 분리된 로그인 가드
+  const requireLoginToast = () => {
+    if (!userId) {
+      showToast("로그인 시 사용할 수 있어요!", "error");
+      return false;
+    }
+    return true;
+  };
+  const requireLoginAlert = () => {
+    if (!userId) {
+      window.alert("로그인 시 사용할 수 있어요!");
+      return false;
+    }
+    return true;
+  };
+
+  // 글쓰기: 알럿 가드
+  const goWrite = () => {
+    if (!requireLoginAlert()) return;
+    navigate(`/community/write`);
+  };
+
+  // (필요 시) 내가 쓴 글: 알럿 가드
+  const goMyPosts = () => {
+    if (!requireLoginAlert()) return;
+    navigate(`/community/mine`);
+  };
 
   // 상단 인기 4개
   const [popularTop, setPopularTop] = useState([]);
   const [popLoading, setPopLoading] = useState(true);
   const [popError, setPopError] = useState(null);
 
-  // 전체 목록 (정렬 토글)
+  // 전체 목록
   const [sort, setSort] = useState("popular"); // 'popular' | 'recent'
   const [items, setItems] = useState([]);
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState(null);
 
-  // 상단 인기 4개: 항상 popular 기준
+  // 상단 인기 4 로드
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
         setPopLoading(true);
-        const res = await fetchCommunityPublic("popular");
+        const res = await fetchCommunityPublic("popular", userId);
         if (!alive) return;
         const arr = Array.isArray(res?.items) ? res.items.slice(0, 4) : [];
         setPopularTop(arr);
@@ -41,31 +85,96 @@ const CommunityHome = () => {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [userId]);
 
-  // 하단 전체 목록: 정렬 토글 반영
+  // Top4 재계산 유틸
+  const recomputeTop4 = (currentTop, list) => {
+    const map = new Map();
+    [...currentTop, ...list].forEach((it) => {
+      const key = it._id || it.id;
+      if (!key) return;
+      map.set(key, it);
+    });
+    const merged = Array.from(map.values());
+    merged.sort(
+      (a, b) =>
+        (b.likes ?? 0) - (a.likes ?? 0) ||
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    return merged.slice(0, 4);
+  };
+
+  // 하단 전체 목록 로드
+  const loadList = async () => {
+    try {
+      setListLoading(true);
+      const res = await fetchCommunityPublic(sort, userId);
+      setItems(Array.isArray(res?.items) ? res.items : []);
+      setListError(null);
+    } catch (e) {
+      setItems([]);
+      setListError("목록을 불러오지 못했습니다.");
+    } finally {
+      setListLoading(false);
+    }
+  };
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        setListLoading(true);
-        const res = await fetchCommunityPublic(sort);
-        if (!alive) return;
-        setItems(Array.isArray(res?.items) ? res.items : []);
-        setListError(null);
-      } catch (e) {
-        setItems([]);
-        setListError("목록을 불러오지 못했습니다.");
-      } finally {
-        if (alive) setListLoading(false);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [sort]);
+    loadList(); // eslint-disable-next-line
+  }, [sort, userId]);
 
-  // ✅ 상단 카드용 안전 매핑 (music / artist, nickname, profileImg 호환)
+  // 좋아요: 토스트 가드
+  const handleToggleLike = async (postId) => {
+    if (!requireLoginToast()) return;
+    try {
+      const res = await toggleLike(postId, userId); // { liked, likes }
+      const { liked, likes } = res;
+
+      // (A) 상단 배열 동기화
+      setPopularTop((prev) => syncLikeInArray(prev, postId, liked, likes));
+
+      // (B) 하단 목록 동기화 + 인기순이면 재정렬 + Top4 재계산
+      setItems((prev) => {
+        const next = syncLikeInArray(prev, postId, liked, likes);
+        if (sort === "popular") {
+          next.sort(
+            (a, b) =>
+              (b.likes ?? 0) - (a.likes ?? 0) ||
+              new Date(b.createdAt) - new Date(a.createdAt)
+          );
+        }
+        setPopularTop((topPrev) => recomputeTop4(topPrev, next));
+        return [...next];
+      });
+    } catch (e) {
+      console.error(e);
+      showToast("좋아요 처리 실패", "error");
+    }
+  };
+
+  // 수정/삭제는 기존 UX 유지(토스트 가드)
+  const handleEdit = (post) => {
+    if (!requireLoginToast()) return;
+    navigate("/community/write", { state: { mode: "edit", post } });
+  };
+
+  const handleDelete = async (post) => {
+    if (!requireLoginToast()) return;
+    if (!post?._id) return;
+    const ok = window.confirm("정말 삭제할까요?");
+    if (!ok) return;
+
+    try {
+      await deletePost(post._id, userId);
+      await loadList();
+      setPopularTop((prev) => prev.filter((p) => (p._id || p.id) !== (post._id || post.id)));
+      showToast("삭제되었습니다!", "success");
+    } catch (e) {
+      console.error(e);
+      showToast("삭제 실패: 백엔드 라우트를 확인해 주세요.", "error");
+    }
+  };
+
+  // 상단 카드용 안전 매핑
   const popularMapped = useMemo(
     () =>
       popularTop.map((item) => ({
@@ -81,15 +190,28 @@ const CommunityHome = () => {
 
   return (
     <Container>
+      {toast && (
+        <Toast
+          key={toast.id ?? toastId}  // 같은 메시지도 반복 노출
+          type={toast.type}
+          message={toast.message}
+          onClose={hideToast}
+          duration={2000}
+        />
+      )}
+
       {/* 상단: 인기 글 4개 */}
       <TopRow>
         <Left>
           <Title>인기 글</Title>
         </Left>
-        <SearchBarWrapper>
-          <input type="text" placeholder="검색어를 입력하세요" />
-        </SearchBarWrapper>
-        <WriteButton onClick={() => navigate(`/community/write`)}>나만의 글 쓰기</WriteButton>
+
+        <RightControls>
+          {/* <SearchBarWrapper>
+            <input type="text" placeholder="검색어를 입력하세요" />
+          </SearchBarWrapper> */}
+          <WriteButton onClick={goWrite}>나만의 글 쓰기</WriteButton>
+        </RightControls>
       </TopRow>
 
       {popError && <InfoText>{popError}</InfoText>}
@@ -102,6 +224,7 @@ const CommunityHome = () => {
               key={item._id || item.id}
               data={item}
               onClick={() => navigate(`/community/${item._id || item.id}`, { state: { post: item } })}
+              onToggleLike={handleToggleLike}
             />
           ))}
         </CardPopularList>
@@ -132,13 +255,20 @@ const CommunityHome = () => {
         <InfoText>불러오는 중…</InfoText>
       ) : (
         <CardList>
-          {items.map((item) => (
-            <CommunityCard
-              key={item._id || item.id}
-              data={item}
-              onClick={() => navigate(`/community/${item._id || item.id}`, { state: { post: item } })}
-            />
-          ))}
+          {items.map((item) => {
+            const isMine = !!userId && (item.userId === userId || item.userId?._id === userId);
+            return (
+              <CommunityCard
+                key={item._id || item.id}
+                data={item}
+                onClick={() => navigate(`/community/${item._id || item.id}`, { state: { post: item } })}
+                showMenu={isMine}
+                onEdit={() => handleEdit(item)}
+                onDelete={() => handleDelete(item)}
+                onToggleLike={handleToggleLike}
+              />
+            );
+          })}
         </CardList>
       )}
     </Container>
@@ -149,44 +279,42 @@ const Container = styled.div`
   width: 100%;
   padding-top: 24px;
 `;
-
 const TopRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
 `;
-
 const Left = styled.div`
   display: flex;
   align-items: center;
   gap: 20px;
 `;
-
+const RightControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
 const SortMenu = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
-
   button {
     font-size: 14px;
     background: none;
     border: none;
     color: #aaa;
     cursor: pointer;
-
     &.active {
       font-weight: 600;
       color: #000;
     }
   }
-
   .divider {
     color: #ccc;
     font-size: 14px;
   }
 `;
-
 const SearchBarWrapper = styled.div`
   input {
     width: 260px;
@@ -196,7 +324,6 @@ const SearchBarWrapper = styled.div`
     border-radius: 5px;
   }
 `;
-
 const WriteButton = styled.button`
   background-color: #ff6f3f;
   color: white;
@@ -212,7 +339,6 @@ const Title = styled.h2`
   font-weight: 700;
   color: #131313;
 `;
-
 const CardList = styled.div`
   display: flex;
   flex-direction: column;
@@ -220,9 +346,11 @@ const CardList = styled.div`
 `;
 
 const CardPopularList = styled.div`
-  display: flex;
-  gap: 40px;
-  margin-bottom: 50px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 40px;
+  /* gap: 40px; */
   overflow: hidden;
 `;
 
@@ -232,7 +360,6 @@ const AllViewBtn = styled.div`
   text-align: center;
   cursor: pointer;
   height: 25px;
-
   button {
     font-size: 14px;
     background: none;
@@ -243,14 +370,12 @@ const AllViewBtn = styled.div`
     line-height: 1;
     justify-content: center;
   }
-
   img {
     width: 25px;
     height: 25px;
     display: block;
   }
 `;
-
 const InfoText = styled.div`
   color: #888;
   font-size: 14px;
