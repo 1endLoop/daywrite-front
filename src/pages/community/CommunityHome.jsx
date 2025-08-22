@@ -1,13 +1,19 @@
-// src/pages/community/CommunityHome.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import CommunityCard from "./CommunityCard";
 import CommunityPopularCard from "./CommunityPopularCard";
 import { useNavigate } from "react-router-dom";
-import { fetchCommunityPublic } from "../../api/communityApi";
+import { useSelector } from "react-redux";
+import { fetchCommunityPublic, deletePost } from "../../api/communityApi";
+import Toast from "../../components/Toast";
 
 const CommunityHome = () => {
   const navigate = useNavigate();
+
+  // 로그인 사용자 파생
+  const auth = useSelector((s) => s.user || s.auth || {});
+  const rawUser = auth.user || auth.data || auth.profile || auth.currentUser || null;
+  const userId = rawUser?._id || rawUser?.id || rawUser?.userId || null;
 
   // 상단 인기 4개
   const [popularTop, setPopularTop] = useState([]);
@@ -19,6 +25,11 @@ const CommunityHome = () => {
   const [items, setItems] = useState([]);
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState(null);
+
+  // 토스트
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = "success") => setToast({ message, type });
+  const hideToast = () => setToast(null);
 
   // 상단 인기 4개: 항상 popular 기준
   useEffect(() => {
@@ -44,28 +55,51 @@ const CommunityHome = () => {
   }, []);
 
   // 하단 전체 목록: 정렬 토글 반영
+  const loadList = async () => {
+    try {
+      setListLoading(true);
+      const res = await fetchCommunityPublic(sort);
+      setItems(Array.isArray(res?.items) ? res.items : []);
+      setListError(null);
+    } catch (e) {
+      setItems([]);
+      setListError("목록을 불러오지 못했습니다.");
+    } finally {
+      setListLoading(false);
+    }
+  };
+
   useEffect(() => {
     let alive = true;
     (async () => {
-      try {
-        setListLoading(true);
-        const res = await fetchCommunityPublic(sort);
-        if (!alive) return;
-        setItems(Array.isArray(res?.items) ? res.items : []);
-        setListError(null);
-      } catch (e) {
-        setItems([]);
-        setListError("목록을 불러오지 못했습니다.");
-      } finally {
-        if (alive) setListLoading(false);
-      }
+      await loadList();
     })();
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sort]);
 
-  // ✅ 상단 카드용 안전 매핑 (music / artist, nickname, profileImg 호환)
+  const handleEdit = (post) => {
+    navigate("/community/write", { state: { mode: "edit", post } });
+  };
+
+  const handleDelete = async (post) => {
+    if (!post?._id) return;
+    const ok = window.confirm("정말 삭제할까요?");
+    if (!ok) return;
+
+    try {
+      await deletePost(post._id, userId);
+      await loadList(); // 재조회 반영
+      showToast("삭제되었습니다!", "success");
+    } catch (e) {
+      console.error(e);
+      showToast("삭제 실패: 백엔드 라우트를 확인해 주세요.", "error");
+    }
+  };
+
+  // 상단 카드용 안전 매핑 (music / artist, nickname, profileImg 호환)
   const popularMapped = useMemo(
     () =>
       popularTop.map((item) => ({
@@ -81,6 +115,8 @@ const CommunityHome = () => {
 
   return (
     <Container>
+      {toast && <Toast type={toast.type} message={toast.message} onClose={hideToast} duration={2000} />}
+
       {/* 상단: 인기 글 4개 */}
       <TopRow>
         <Left>
@@ -132,13 +168,20 @@ const CommunityHome = () => {
         <InfoText>불러오는 중…</InfoText>
       ) : (
         <CardList>
-          {items.map((item) => (
-            <CommunityCard
-              key={item._id || item.id}
-              data={item}
-              onClick={() => navigate(`/community/${item._id || item.id}`, { state: { post: item } })}
-            />
-          ))}
+          {items.map((item) => {
+            // 내 글 판단: 문자열/객체 케이스 모두 대응
+            const isMine = !!userId && (item.userId === userId || item.userId?._id === userId);
+            return (
+              <CommunityCard
+                key={item._id || item.id}
+                data={item}
+                onClick={() => navigate(`/community/${item._id || item.id}`, { state: { post: item } })}
+                showMenu={isMine}                    // 내 글에만 더보기
+                onEdit={() => handleEdit(item)}      // 수정하기
+                onDelete={() => handleDelete(item)}  // 삭제하기
+              />
+            );
+          })}
         </CardList>
       )}
     </Container>
