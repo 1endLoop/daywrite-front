@@ -1,10 +1,12 @@
+// src/pages/community/CommunityCard.jsx
 import { useState, useRef } from "react";
 import Card from "./community.card.style";
 import Dropdown from "../archive/dropdown.style";
 import useClickOutside from "../../modules/hooks/useClickOutside";
 
-const CommunityCard = ({ data, onClick, onEdit, onDelete, showMenu = false }) => {
+const CommunityCard = ({ data, onClick, onEdit, onDelete, onToggleLike, showMenu = false }) => {
   const {
+    _id,
     content = "",
     title = "",
     musicTitle = "",
@@ -12,13 +14,13 @@ const CommunityCard = ({ data, onClick, onEdit, onDelete, showMenu = false }) =>
     profileImg = data?.profileImg || data?.profileImageUrl || "",
     nickname = "익명",
     likes = 0,
+    liked = false,
     comments = 0,
   } = data;
 
-  const [liked, setLiked] = useState(false);
-  const [openMenu, setOpenMenu] = useState(false);
   const menuRef = useRef(null);
   useClickOutside(menuRef, () => setOpenMenu(false));
+  const [openMenu, setOpenMenu] = useState(false);
 
   return (
     <Card.Card>
@@ -30,9 +32,15 @@ const CommunityCard = ({ data, onClick, onEdit, onDelete, showMenu = false }) =>
             <span className="author">{nickname}</span>
           </Card.TitleWrapper>
         </Card.LeftInfo>
+
         <Card.RightInfo>
           <Card.IconGroup>
-            <Card.Icon onClick={() => setLiked((prev) => !prev)}>
+            <Card.Icon
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleLike?.(_id);
+              }}
+            >
               <img
                 src={liked ? "/assets/images/icons/svg/thumb=on.svg" : "/assets/images/icons/svg/thumb=off.svg"}
                 alt="like"
@@ -66,22 +74,8 @@ const CommunityCard = ({ data, onClick, onEdit, onDelete, showMenu = false }) =>
             {openMenu && (
               <Dropdown.Wrapper>
                 <Dropdown.Menu>
-                  <Dropdown.Item
-                    onClick={() => {
-                      onEdit?.(data);
-                      setOpenMenu(false);
-                    }}
-                  >
-                    수정하기
-                  </Dropdown.Item>
-                  <Dropdown.Item
-                    onClick={() => {
-                      onDelete?.(data);
-                      setOpenMenu(false);
-                    }}
-                  >
-                    삭제하기
-                  </Dropdown.Item>
+                  <Dropdown.Item onClick={() => onEdit?.(data)}>수정하기</Dropdown.Item>
+                  <Dropdown.Item onClick={() => onDelete?.(data)}>삭제하기</Dropdown.Item>
                 </Dropdown.Menu>
               </Dropdown.Wrapper>
             )}

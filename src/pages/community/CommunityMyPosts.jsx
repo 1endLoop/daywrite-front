@@ -6,6 +6,8 @@ import ToggleButton from "../../components/button/ToggleButton";
 import { useSelector } from "react-redux";
 import { fetchMyPosts, deletePost } from "../../api/communityApi";
 import Toast from "../../components/Toast";
+import { toggleLike } from "../../api/communityApi";
+import { syncLikeInArray } from "../../modules/likeSync";
 
 const CommunityMyPosts = () => {
   const navigate = useNavigate();
@@ -63,6 +65,20 @@ const CommunityMyPosts = () => {
     }
   };
 
+  const ensureLogin = () => !!userId;
+
+  const handleToggleLike = async (postId) => {
+    if (!ensureLogin()) return;
+    try {
+      const res = await toggleLike(postId, userId);
+      const { liked, likes } = res;
+      setItems((prev) => syncLikeInArray(prev, postId, liked, likes));
+    } catch (e) {
+      console.error(e);
+      showToast("좋아요 처리 실패", "error");
+    }
+  };
+
   return (
     <Container>
       {toast && <Toast type={toast.type} message={toast.message} onClose={hideToast} duration={2000} />}
@@ -83,6 +99,7 @@ const CommunityMyPosts = () => {
             onEdit={() => handleEdit(item)}
             onDelete={() => handleDelete(item)}
             showMenu
+            onToggleLike={handleToggleLike}
           />
         ))}
       </CardList>

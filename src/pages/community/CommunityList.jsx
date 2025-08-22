@@ -1,29 +1,29 @@
+// src/pages/community/CommunityList.jsx
 import styled from "styled-components";
 import CommunityCard from "./CommunityCard";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { fetchCommunityPublic, deletePost } from "../../api/communityApi";
+import { fetchCommunityPublic, deletePost, toggleLike } from "../../api/communityApi";
 import Toast from "../../components/Toast";
+import { syncLikeInArray } from "../../modules/likeSync";
 
 const CommunityList = () => {
   const navigate = useNavigate();
-  const [sort, setSort] = useState("popular"); 
+  const [sort, setSort] = useState("popular");
   const [items, setItems] = useState([]);
 
-  // 로그인 사용자 파생
   const auth = useSelector((s) => s.user || s.auth || {});
   const rawUser = auth.user || auth.data || auth.profile || auth.currentUser || null;
   const userId = rawUser?._id || rawUser?.id || rawUser?.userId || null;
 
-  // 토스트
   const [toast, setToast] = useState(null);
   const showToast = (message, type = "success") => setToast({ message, type });
   const hideToast = () => setToast(null);
 
   const load = async () => {
     try {
-      const res = await fetchCommunityPublic(sort);
+      const res = await fetchCommunityPublic(sort, userId);
       setItems(res.items || []);
     } catch (e) {
       console.error(e);
@@ -31,13 +31,34 @@ const CommunityList = () => {
     }
   };
 
-  useEffect(() => {
-    load();
-  }, [sort]);
+  useEffect(() => { load(); }, [sort, userId]);
 
-  const handleEdit = (post) => {
-    navigate("/community/write", { state: { mode: "edit", post } });
+  const ensureLogin = () => {
+    if (!userId) {
+      setToast({ message: "로그인 시 사용할 수 있어요!", type: "error" });
+      return false;
+    }
+    return true;
   };
+
+  const handleToggleLike = async (postId) => {
+    if (!ensureLogin()) return;
+    try {
+      const res = await toggleLike(postId, userId);
+      const { liked, likes } = res;
+      setItems((prev) => {
+        const next = syncLikeInArray(prev, postId, liked, likes);
+        return sort === "popular"
+          ? [...next].sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0) || (new Date(b.createdAt) - new Date(a.createdAt)))
+          : next;
+      });
+    } catch (e) {
+      console.error(e);
+      showToast("좋아요 처리 실패", "error");
+    }
+  };
+
+  const handleEdit = (post) => navigate("/community/write", { state: { mode: "edit", post } });
 
   const handleDelete = async (post) => {
     if (!post?._id) return;
@@ -45,8 +66,8 @@ const CommunityList = () => {
     if (!ok) return;
 
     try {
-      await deletePost(post._id, userId); // 서버 삭제
-      await load();                      // 재조회로 반영
+      await deletePost(post._id, userId);
+      await load();
       showToast("삭제되었습니다!", "success");
     } catch (e) {
       console.error(e);
@@ -62,13 +83,9 @@ const CommunityList = () => {
         <Left>
           <Title>전체 글</Title>
           <SortMenu>
-            <button className={sort === "popular" ? "active" : ""} onClick={() => setSort("popular")}>
-              인기순
-            </button>
+            <button className={sort === "popular" ? "active" : ""} onClick={() => setSort("popular")}>인기순</button>
             <span className="divider">|</span>
-            <button className={sort === "recent" ? "active" : ""} onClick={() => setSort("recent")}>
-              최신순
-            </button>
+            <button className={sort === "recent" ? "active" : ""} onClick={() => setSort("recent")}>최신순</button>
           </SortMenu>
         </Left>
         <WriteButton onClick={() => navigate("/community/write")}>나만의 글 쓰기</WriteButton>
@@ -82,9 +99,10 @@ const CommunityList = () => {
               key={item._id}
               data={item}
               onClick={() => navigate(`/community/${item._id}`, { state: { post: item } })}
-              showMenu={isMine}                 // 내 글에만 더보기 표시
-              onEdit={() => handleEdit(item)}   // 수정하기
-              onDelete={() => handleDelete(item)} // 삭제하기
+              showMenu={isMine}
+              onEdit={() => handleEdit(item)}
+              onDelete={() => handleDelete(item)}
+              onToggleLike={handleToggleLike}
             />
           );
         })}
