@@ -2,15 +2,24 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Post from "./post.detail.style";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { fetchPostById } from "../../api/communityApi";
+import { useSelector } from "react-redux";
+import { fetchPostById, toggleLike } from "../../api/communityApi";
+import Toast from "../../components/Toast";
 
 const PostDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
 
-  // 좋아요 토글 버튼 (UI용)
-  const [liked, setLiked] = useState(false);
+  // 로그인 사용자
+  const auth = useSelector((s) => s.user || s.auth || {});
+  const rawUser = auth.user || auth.data || auth.profile || auth.currentUser || null;
+  const userId = rawUser?._id || rawUser?.id || rawUser?.userId || null;
+
+  // 토스트
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = "success") => setToast({ message, type });
+  const hideToast = () => setToast(null);
 
   // 1차: 라우팅 state로 넘어온 post
   const initialPost = location.state?.post || null;
@@ -19,16 +28,16 @@ const PostDetail = () => {
   const [loading, setLoading] = useState(!initialPost && !!id);
   const [error, setError] = useState(null);
 
-  // 필요시 서버 조회
+  // 필요시 서버 조회 (liked 포함 위해 userId 전달)
   useEffect(() => {
-    if (post || !id) return;
+    if (!id || post) return;
     let alive = true;
     (async () => {
       try {
         setLoading(true);
-        const data = await fetchPostById(id);
+        const data = await fetchPostById(id, userId); // ← userId도 넘겨서 liked 계산 받기
         if (!alive) return;
-        if (!data) {
+        if (!data || data.success === false) {
           setError("게시글을 찾을 수 없습니다.");
         } else {
           setPost(data);
@@ -39,10 +48,37 @@ const PostDetail = () => {
         if (alive) setLoading(false);
       }
     })();
-    return () => {
-      alive = false;
-    };
-  }, [id, post]);
+    return () => { alive = false; };
+  }, [id, userId, post]);
+
+  // 좋아요 토글
+  const ensureLogin = () => {
+    if (!userId) {
+      showToast("로그인 시 사용할 수 있어요!", "error");
+      return false;
+    }
+    return true;
+  };
+
+  const handleToggleLike = async () => {
+    if (!ensureLogin() || !post?._id) return;
+    try {
+      const res = await toggleLike(post._id, userId); // { liked, likes }
+      const { liked, likes } = res;
+
+      // 1) 상세 화면 즉시 반영
+      setPost((prev) => (prev ? { ...prev, liked, likes } : prev));
+
+      // 2) (선택) 홈/목록 등 다른 화면에도 즉시 반영되게 브로드캐스트
+      //    듣는 쪽이 없으면 무시되므로 안전합니다.
+      window.dispatchEvent(new CustomEvent("COMMUNITY_LIKE_SYNC", {
+        detail: { postId: post._id, liked, likes }
+      }));
+    } catch (e) {
+      console.error(e);
+      showToast("좋아요 처리 실패", "error");
+    }
+  };
 
   // 안전한 필드 매핑
   const view = useMemo(() => {
@@ -50,14 +86,12 @@ const PostDetail = () => {
     return {
       title: post.title || "",
       content: post.content || "",
-      // 작성자 닉네임
       nickname: post.nickname || "익명",
-      // 프로필 이미지 (백엔드에 profileImg로 저장)
       profileImg: post.profileImg || post.profileImageUrl || "/assets/images/profiles/profile.jpg",
-      // 음악: DB 필드명은 musicTitle, musicArtist
       musicTitle: post.musicTitle || "",
       musicArtist: post.musicArtist || "",
       likes: post.likes ?? 0,
+      liked: !!post.liked, // 👈 서버/상태의 liked 사용
       comments: post.comments ?? 0,
       commentList: post.commentList || [],
     };
@@ -89,6 +123,8 @@ const PostDetail = () => {
 
   return (
     <Post.Wrapper>
+      {toast && <Toast type={toast.type} message={toast.message} onClose={hideToast} duration={2000} />}
+
       <Post.Top>
         <Post.Back onClick={() => navigate(-1)}>←</Post.Back>
         <Post.Tab>전체 글</Post.Tab>
@@ -100,16 +136,15 @@ const PostDetail = () => {
             <Post.Profile src={view.profileImg} alt="profile" />
             <Post.TitleWrapper>
               <span className="title">{view.title}</span>
-              {/* 작성자 표시는 저자(author) 대신 '닉네임' */}
               <span className="author">{view.nickname}</span>
             </Post.TitleWrapper>
           </Post.LeftInfo>
 
           <Post.RightInfo>
             <Post.IconGroup>
-              <Post.Icon onClick={() => setLiked((prev) => !prev)}>
+              <Post.Icon onClick={handleToggleLike}>
                 <img
-                  src={liked ? "/assets/images/icons/svg/thumb=on.svg" : "/assets/images/icons/svg/thumb=off.svg"}
+                  src={view.liked ? "/assets/images/icons/svg/thumb=on.svg" : "/assets/images/icons/svg/thumb=off.svg"}
                   alt="like"
                 />
               </Post.Icon>

@@ -28,8 +28,10 @@ export const fetchMyPosts = async (userId, status = "published") => {
 };
 
 /** 단건 조회 */
-export const fetchPostById = async (id) => {
-  const { data } = await API.get(`/community/posts/${id}`);
+export const fetchPostById = async (id, userId) => {
+  const { data } = await API.get(`/community/posts/${id}`, {
+    params: userId ? { userId } : {},
+  });
   return data;
 };
 
