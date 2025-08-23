@@ -6,57 +6,10 @@ import './calendarcustom.css';
 import styled from 'styled-components';
 import CalendarPopup from './CalendarPopup';
 
-const CalendarList = () => {
+const CalendarList = ({userId, setWritingCount,setConsecutiveDays}) => {
   const [calendarData, setCalendarData] = useState({});
   const [showPopup, setShowPopup] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
-
-  // 로그인 유저 확인
-  const auth = useSelector((s) => s.user || s.auth || {});
-  const rawUser = auth.user || auth.data || auth.profile || auth.currentUser || null;
-  const userId = rawUser?._id ?? rawUser?.id ?? rawUser?.userId ?? localStorage.getItem("uid") ?? null;
-  const isAuthed = typeof auth.isLoggedIn === "boolean" ? auth.isLoggedIn : Boolean(userId);
-
-  useEffect(() => {
-    if (!isAuthed || !userId) {
-      return;
-    }
-
-      const fetchData = async () => {
-        try {
-          // 1. 모든 history 불러오기
-          const token = localStorage.getItem("jwtToken");
-          
-          const historyRes = await fetch(`http://localhost:8000/api/history/user/${userId}`, {
-            headers: {
-              ...(token ? { Authorization: `Bearer ${token}` } : {})
-            }
-          });
-          
-          if (!historyRes.ok) {
-            console.error("API 응답 에러:", historyRes.status, historyRes.statusText);
-            return;
-          }
-          
-          const histories = await historyRes.json();
-          console.log("받아온 histories:", histories)
-        
-          const data = {};
-          histories.forEach(({createdAt,content ,book, author, mood, music, artist}) => {
-            const date = new Date(createdAt).toLocaleDateString('en-CA');
-            data[date] =data[date] || [];
-            data[date].push({ content:content,book: book, author: author ,mood: mood ,music:music,artist:artist});
-          });
-          console.log(data);
-
-        setCalendarData(data);
-        } catch (err) {
-          console.error("데이터 불러오기 실패:", err);
-        }
-      };
-
-    fetchData();
-  }, [isAuthed, userId]);
 
   const handleDateClick = (date) => {
     const dateString = date.toLocaleDateString('en-CA');
@@ -71,6 +24,75 @@ const CalendarList = () => {
     setSelectedDate(null);
   };
 
+ 
+
+  useEffect(() => {
+    if (!userId) {
+       return;
+    }
+
+    const fetchData = async () => {
+      try {
+        const historyRes = await fetch(`http://localhost:8000/api/history/user/${userId}`);
+        
+        if (!historyRes.ok) {
+          console.error("API 응답 에러:", historyRes.status, historyRes.statusText);
+          return;
+        }
+        
+        const histories = await historyRes.json();
+
+        const consecutiveDays = (histories) => {
+          const dates = [...new Set(histories.map(h =>
+            new Date(h.createdAt).toLocaleDateString('en-CA')
+          ))].sort();
+
+          let consecutive = 0;
+          let current = 0;
+
+          for (let i = dates.length - 1; i >= 0; i--) {
+            const today = new Date().toLocaleDateString('en-CA');
+            const currentDate = dates[i];
+
+            if (i === dates.length - 1 && currentDate === today) {
+              current = 1;
+            } else if (i < dates.length - 1) {
+              const prevDate = dates[i + 1];
+              const diff = (new Date(prevDate) - new Date(currentDate)) / (1000 *
+              60 * 60 * 24);
+
+              if (diff === 1) {
+                current++;
+              } else {
+                break;
+              }
+            }
+          }
+
+          return current;
+        };
+        
+        setWritingCount?.(histories.length); //부모에게 필사개수 전달
+        setConsecutiveDays?.(consecutiveDays(histories))//부모에게 연속 일자 전달 
+
+        const data = {};
+        histories.forEach(({createdAt,content ,book, author, mood, music, artist}) => {
+          const date = new Date(createdAt).toLocaleDateString('en-CA');
+          data[date] =data[date] || [];
+          data[date].push({ content:content,book: book, author: author ,mood: mood ,music:music,artist:artist});
+        });
+        console.log(data);
+
+      setCalendarData(data);
+      } catch (err) {
+        console.error("데이터 불러오기 실패:", err);
+      }
+    };
+
+    fetchData();
+  }, [userId]);
+
+  
   return ( 
   <Container>
     <Calendar locale="en-US"
