@@ -10,12 +10,16 @@ import BookmarkDetail from "./BookmarkDetail";
 import Toast from "../../components/Toast";
 
 const BookmarkTypedList = () => {
+  const BE = process.env.REACT_APP_BACKEND_URL;
   const navigate = useNavigate();
   const { id } = useParams();                 // 폴더 ObjectId
   const location = useLocation();
+  const token = localStorage.getItem("jwtToken");
 
   // 네비게이션 state로 받은 값(옵션)
+  // const navState = (location.state || {});
   const navState = (location.state || {});
+  const readOnly = !!navState.readOnly;
   const [folderMeta, setFolderMeta] = useState({
     title: navState.title || "폴더",
     thumbnailUrl: navState.thumbnailUrl || "",
@@ -83,6 +87,61 @@ const BookmarkTypedList = () => {
     else setSelectedIds((prev) => (prev.includes(item._id) ? prev.filter((v) => v !== item._id) : [...prev, item._id]));
   };
 
+    // ---- 이름변경 ----
+  const handleRename = async () => {
+    setDropdownOpen(false);
+    const next = window.prompt("새 폴더 이름을 입력하세요", folderMeta.title);
+    if (next == null) return;               // 취소
+    const title = next.trim();
+    if (!title) return alert("제목을 입력해주세요.");
+
+    try {
+      const res = await fetch(`${BE}/api/bookmarkFolder/folders/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ title, userId }), // 토큰 미들웨어 없을 때 대비
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "이름 변경 실패");
+
+      setFolderMeta(prev => ({ ...prev, title: data.title }));
+      setToast("폴더 이름이 변경되었습니다.");
+      setTimeout(() => setToast(null), 1500);
+    } catch (e) {
+      console.error(e);
+      alert("이름 변경에 실패했습니다.");
+    }
+  };
+
+  // ---- 폴더 삭제 ----
+  const handleDelete = async () => {
+    setDropdownOpen(false);
+    if (!window.confirm("정말 이 폴더를 삭제하시겠습니까?")) return;
+
+    try {
+      const res = await fetch(`${BE}/api/bookmarkFolder/folders/${id}?userId=${encodeURIComponent(userId ?? "")}`, {
+        method: "DELETE",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "삭제 실패");
+
+      setToast("폴더가 삭제되었습니다.");
+      setTimeout(() => {
+        setToast(null);
+        navigate(-1); // 목록 등 이전 페이지로
+      }, 800);
+    } catch (e) {
+      console.error(e);
+      alert("삭제에 실패했습니다.");
+    }
+  };
+
   return (
     <>
       {toast && <Toast message={toast} />}
@@ -99,11 +158,12 @@ const BookmarkTypedList = () => {
           <S.FolderTitleRow>
             <S.FolderTitle>{folderMeta.title}</S.FolderTitle>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <S.MoreBtn onClick={handleMoreClick}>⋯</S.MoreBtn>
+              {/* <S.MoreBtn onClick={handleMoreClick}>⋯</S.MoreBtn> */}
+              {!readOnly && <S.MoreBtn onClick={handleMoreClick}>⋯</S.MoreBtn>}
             </div>
           </S.FolderTitleRow>
 
-          {isEditMode ? (
+          {!readOnly && isEditMode ? (
             <S.FolderEditRow>
               <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
                 <S.DeleteButton /* onClick={handleDeleteSelected} */>삭제</S.DeleteButton>
@@ -112,15 +172,29 @@ const BookmarkTypedList = () => {
               <S.DoneButton onClick={() => { setIsEditMode(false); setSelectedIds([]); }}>완료</S.DoneButton>
             </S.FolderEditRow>
           ) : (
-            <S.FolderEditRow>
-              <S.EditButton onClick={() => { setIsEditMode(true); setSelectedIds([]); }}>편집</S.EditButton>
-            </S.FolderEditRow>
+            // <S.FolderEditRow>
+            //   <S.EditButton onClick={() => { setIsEditMode(true); setSelectedIds([]); }}>편집</S.EditButton>
+            // </S.FolderEditRow>
+            !readOnly && (
+              <S.FolderEditRow>
+                <S.EditButton onClick={() => { setIsEditMode(true); setSelectedIds([]); }}>편집</S.EditButton>
+              </S.FolderEditRow>
+            )
           )}
 
-          {dropdownInfo && (
-            <Dropdown refProp={dropdownRef} x={dropdownInfo.x} y={dropdownInfo.y} onClose={() => setDropdownOpen(false)}>
-              <li>이름변경</li>
-              <li>폴더삭제</li>
+          {!readOnly && dropdownInfo && (
+            // <Dropdown refProp={dropdownRef} x={dropdownInfo.x} y={dropdownInfo.y} onClose={() => setDropdownOpen(false)}>
+            //   <li>이름변경</li>
+            //   <li>폴더삭제</li>
+            // </Dropdown>
+            <Dropdown
+              refProp={dropdownRef}
+              x={dropdownInfo.x}
+              y={dropdownInfo.y}
+              onClose={() => setDropdownOpen(false)}
+            >
+              <li onClick={handleRename}>이름변경</li>
+              <li onClick={handleDelete}>폴더삭제</li>
             </Dropdown>
           )}
         </S.ThumbnailBox>

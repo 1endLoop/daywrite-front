@@ -44,23 +44,6 @@ const BookmarkAll = () => {
   }, [type]);
 
   
-  // 이미지
-  // const buildImageSrc = (thumb = "") => {
-  //   if (!thumb) return "";
-  //   // 완전한 URL이면 그대로
-  //   if (/^https?:\/\//i.test(thumb)) return thumb;
-
-  //   // "/uploads/xxx" 같이 슬래시로 시작 → API_BASE + thumb
-  //   if (thumb.startsWith("/")) return `${API_BASE}${thumb}`;
-
-  //   // "uploads/xxx" → API_BASE + "/uploads/xxx"
-  //   if (thumb.startsWith("uploads/")) return `${API_BASE}/${thumb}`;
-
-  //   // 그 외 "profile/xxx" 같은 상대경로 → API_BASE + "/uploads/" + thumb
-  //   return `${API_BASE}/uploads/${thumb}`;
-  // };
-
-  
   // BookmarkAll.jsx
   const getAssetOrigin = () => {
     // 예: http://localhost:8000 또는 http://localhost:8000/api
@@ -92,23 +75,6 @@ const BookmarkAll = () => {
       built: buildImageSrc(i.thumbnailUrl)
     })));
   }, [items]);
-
-
-  // useEffect(() => {
-  //   const fetchFolders = async () => {
-  //     try {
-  //       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/playList/folders`);
-  //       const data = await res.json();
-  //       const filtered = data.filter(folder => folder.type === contentType);
-  //       setItems(filtered);
-  //     } catch (err) {
-  //       console.error("폴더 목록 불러오기 실패:", err);
-  //     }
-  //   };
-
-  //   fetchFolders();
-  // }, [type]);
-
 
   return (
     <S.Container>

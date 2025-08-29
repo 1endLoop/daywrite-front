@@ -14,6 +14,7 @@ S.TypedTitle = styled.div`
         font-size: 15px;
         margin-top: 15px;
         margin-right: 32px;
+        cursor: pointer;
     }
 `
 S.TypedWrapper = styled.div`
@@ -58,13 +59,6 @@ S.LetterBox = styled.div`
     }
 `
 
-S.LikeCount = styled.div`
-    width: 70px;
-    height: 20px;
-    margin-top: 20px;
-    text-align: center;
-    position: absolute; right: 5px; top: 2px;
-`
 // 드롭다운
 S.dd = styled.div`
     border: solid 1px red;
@@ -110,6 +104,7 @@ S.PlayedTitle = styled.div`
         font-size: 15px;
         margin-top: 15px;
         margin-right: 32px;
+        cursor: pointer;
     }
 `
 S.PlayedWrapper = styled.div`
@@ -119,5 +114,52 @@ S.PlayedWrapper = styled.div`
     display: flex;
     margin-top: 10px;
 `
+
+// 하트가 들어가는 빨간 테두리 박스 (div 버전)
+S.HeartBox = styled.div`
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 22px;
+  height: 22px;
+  background: #fff;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    background: #fff7f7;
+    border-color: #ff6b6b;
+  }
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(231,76,60,.35);
+  }
+
+  img {
+    width: 22px;
+    height: 22px;
+    display: block;
+    pointer-events: none; /* 내부 이미지가 클릭 이벤트 먹지 않도록 */
+  }
+`;
+
+// 좋아요 수가 하트와 겹치지 않게 오른쪽 띄움
+S.LikeCount = styled.div`
+  height: 20px;
+  text-align: center;
+  position: absolute;
+  right: 0px;
+  top: 18px;
+
+  .likeCount { 
+    font-size: 15px; 
+    color: #787878; 
+    }
+`;
+
 
 export default S;
