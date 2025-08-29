@@ -50,7 +50,22 @@ S.AllViewBox = styled.div`
             height: 20px;
             position: absolute; top: 2px; right: 8px;
         }
+        .likeCount{
+            font-size: 14px;
+            color: #787878;
+            position: absolute; 
+            right: 3px;
+            top: 26px; 
+        }
     }
 `
+S.Tab = styled.div`
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid ${({ $active }) => ($active ? "#ff6b6b" : "#ddd")};
+    color: ${({ $active }) => ($active ? "#ff6b6b" : "#666")};
+    cursor: pointer;
+    user-select: none;
+`;
 
 export default S;

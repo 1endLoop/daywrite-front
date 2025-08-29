@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import BookmarkCard from "./BookmarkCard";
@@ -12,83 +12,117 @@ const BookmarkSection = ({ title, type }) => {
   const { ref: scrollRef, scroll } = useScrollX();
   const [showLeftBtn, setShowLeftBtn] = useState(false);
   const [showRightBtn, setShowRightBtn] = useState(true);
+
+  // 서버 폴더 목록
+  const [serverFolders, setServerFolders] = useState([]);
+  // 내가 누른 북마크(전체 개수 표시용)
   const [bookmarkItems, setBookmarkItems] = useState([]);
 
-  // 🔐 로그인 사용자 파생
+  // 로그인 유저
   const auth = useSelector((s) => s.user || s.auth || {});
   const rawUser = auth.user || auth.data || auth.profile || auth.currentUser || null;
   const userId = rawUser?._id ?? rawUser?.id ?? rawUser?.userId ?? null;
+  const token = localStorage.getItem("jwtToken");
   const isAuthed = typeof auth.isLoggedIn === "boolean" ? auth.isLoggedIn : Boolean(userId);
 
-  // ✅ 드롭다운
+  // 드롭다운
   const [dropdownInfo, setDropdownInfo] = useState(null);
   const dropdownRef = useRef(null);
   useClickOutside(dropdownRef, () => setDropdownInfo(null));
 
-  // ✅ 북마크 목록 가져오기 (로그인 후)
+  // 정적 파일 origin → 업로드 URL 만들 때 사용
+  const BE = process.env.REACT_APP_BACKEND_URL;
+  const getAssetOrigin = () => {
+    const raw = (BE || "").replace(/\/+$/, "");
+    return raw.replace(/\/api$/i, "") || "http://localhost:8000";
+  };
+  const buildImageSrc = (thumb = "") => {
+    if (!thumb) return "";
+    const clean = String(thumb).trim().replace(/\\/g, "/");
+    if (/^(https?:|data:|blob:)/i.test(clean)) return clean;
+    const origin = getAssetOrigin();
+    if (clean.startsWith("/uploads/")) return `${origin}${clean}`;
+    if (clean.startsWith("uploads/")) return `${origin}/${clean}`;
+    return `${origin}/uploads/${clean.replace(/^\/+/, "")}`;
+  };
+
+  // 내 북마크(전체 개수) 가져오기
   useEffect(() => {
     if (!isAuthed || !userId) return;
-
-    const fetchBookmarks = async () => {
+    (async () => {
       try {
-        const res = await fetch(`/api/bookmarks?userId=${userId}`);
+        const res = await fetch(`/api/bookmarks?userId=${encodeURIComponent(userId)}`);
         const data = await res.json();
-
-        // 중복(historyId 기준) 제거 안전 처리
         const dedup = Array.isArray(data)
-          ? Array.from(new Map(data.map((b) => [String(b.historyId || b._id), b])).values())
+          ? Array.from(new Map(data.map(b => [String(b.historyId || b._id), b])).values())
           : [];
-
         setBookmarkItems(dedup);
       } catch (err) {
         console.error("북마크 목록 불러오기 실패:", err);
+        setBookmarkItems([]);
       }
-    };
-    fetchBookmarks();
+    })();
   }, [isAuthed, userId]);
 
-  // ✅ 폴더별 그룹화
-  const groupedByFolder = bookmarkItems.reduce((acc, item) => {
-    const fid = item.folderId ?? 1;
-    if (!acc[fid]) acc[fid] = [];
-    acc[fid].push(item);
-    return acc;
-  }, {});
+  // 내 폴더 목록 가져오기 (글/곡 각각 해당 API)
+  useEffect(() => {
+    if (!isAuthed || !userId) return;
+    (async () => {
+      try {
+        const basePath   = type === "글" ? "bookmarkFolder" : "playList";
+        const filterType = type; // "글" 또는 "곡"
+        const res = await fetch(
+          `${BE}/api/${basePath}/folders?userId=${encodeURIComponent(userId)}&type=${encodeURIComponent(filterType)}`,
+          { headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) } }
+        );
+        const data = res.ok ? await res.json() : [];
+        // 서버 스키마: [{ id, title, type, thumbnailUrl, count }]
+        const mapped = (Array.isArray(data) ? data : []).map(f => ({
+          id: String(f.id),
+          title: f.title,
+          type: f.type,
+          count: f.count ?? 0,
+          imageUrl: buildImageSrc(f.thumbnailUrl) || (type === "글" ? "/assets/images/book-img.jpeg" : "/assets/images/album-image.png"),
+        }));
+        setServerFolders(mapped);
+      } catch (e) {
+        console.error("폴더 목록 실패:", e);
+        setServerFolders([]);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthed, userId, type, token]);
 
-  // ✅ 폴더 메타 (임시)
-  const folders = [
-    { id: 1, title: "북마크한 모든 글", type: "글", imageUrl: "/assets/images/book-img.jpeg" },
-    { id: 2, title: "쇼펜하우어 명언집", type: "글", imageUrl: "/assets/images/book-img.jpeg" },
-    { id: 3, title: "니체 명언집", type: "글", imageUrl: "/assets/images/book-img.jpeg" },
-    { id: 8, title: "사랑에 빠졌을 때", type: "곡", imageUrl: "/assets/images/album-image.png" },
-    { id: 9, title: "포근한", type: "곡", imageUrl: "/assets/images/profiles/cat.JPG" },
-  ];
+  // 렌더 카드: (글) '모든 글' + 서버 폴더 / (곡) 서버 폴더만
+  const cards = useMemo(() => {
+    const list = [...serverFolders];
+    if (type === "글") {
+      list.unshift({
+        id: "1", // 기존 라우트 호환 (예전엔 1이 '모든 글'이었음)
+        title: "북마크한 모든 글",
+        type: "글",
+        count: bookmarkItems.length,
+        imageUrl: "/assets/images/book-img.jpeg",
+        _builtinAll: true,
+      });
+    }
+    return list;
+  }, [serverFolders, type, bookmarkItems.length]);
 
-  // ✅ 필터 + count 계산
-  const totalTypedCount = bookmarkItems.length; // 현재 API가 '글' 북마크만 내려온다고 가정
-  const folderCards = folders
-    .filter((f) => f.type === type)
-    .map((f) => {
-      const baseCount = groupedByFolder[f.id]?.length || 0;
-      // "북마크한 모든 글"은 실제 총 개수로 표시
-      const count = f.id === 1 && type === "글" ? totalTypedCount : baseCount;
-      return { ...f, count };
-    });
-
-  // ✅ 드롭다운 위치
+  // 점(…) 클릭
   const handleMoreClick = (e, item) => {
+    if (item._builtinAll) return; // '모든 글'은 메뉴 없음
     const rect = e.currentTarget.getBoundingClientRect();
     setDropdownInfo({ x: rect.left, y: rect.bottom, item });
   };
 
-  // ✅ 스크롤 감지
+  // 스크롤 버튼 표시 제어
   const handleScrollVisibility = () => {
     const el = scrollRef.current;
     if (!el) return;
     setShowLeftBtn(el.scrollLeft > 0);
     setShowRightBtn(el.scrollLeft + el.clientWidth < el.scrollWidth);
   };
-
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -96,22 +130,6 @@ const BookmarkSection = ({ title, type }) => {
     handleScrollVisibility();
     return () => el.removeEventListener("scroll", handleScrollVisibility);
   }, []);
-
-  // // newFolder 저장한 값 보여주기
-  // useEffect(() => {
-  //   const fetchFolders = async () => {
-  //     try {
-  //       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/bookmarkFolder/folders`);
-  //       const data = await res.json();
-  //       console.log("✅ folders API 응답:", data);
-  //       setFolders(data);
-  //     } catch (err) {
-  //       console.error("폴더 목록 불러오기 실패:", err);
-  //     }
-  //   };
-
-  //   fetchFolders();
-  // }, []);
 
   return (
     <S.Section>
@@ -131,42 +149,52 @@ const BookmarkSection = ({ title, type }) => {
         {showLeftBtn && <S.ScrollLeftBtn onClick={() => scroll("left")}>{"<"}</S.ScrollLeftBtn>}
 
         <S.CardRow ref={scrollRef}>
-          {folderCards.map((forlder) => (
-            // <BookmarkCard
-            //   key={item.id}
-            //   {...item}
-            //   onMoreClick={(e) => handleMoreClick(e, item)}
-            //   onClick={() => navigate(`/archive/bookmark/${type === "글" ? "typed" : "played"}/${item.id}`)}
-            // />
-            <BookmarkCard
-              key={forlder.id}
-              title={forlder.title}
-              type={forlder.type}
-              // imageUrl={`${process.env.REACT_APP_BACKEND_URL}/uploads/${item.thumbnailUrl}`} // 여기 중요!
-              imageUrl={forlder.imageUrl}
-              count={forlder.count}
-              onMoreClick={(e) => handleMoreClick(e, forlder)}
-              onClick={() => navigate(`/archive/bookmark/${type === "글" ? "typed" : "played"}/${forlder.id}`)}
-            />
-          ))}
-          {/* {folderCards.map((item) => (
+          {cards.map((item) => (
             <BookmarkCard
               key={item.id}
-              {...item}
-              onMoreClick={(e) => handleMoreClick(e, item)}
-              onClick={() => navigate(`/archive/bookmark/${type === "글" ? "typed" : "played"}/${item.id}`)}
+              title={item.title}
+              type={item.type}
+              imageUrl={item.imageUrl}
+              count={item.count}
+              onMoreClick={(e) => {
+                if (item._builtinAll) return; // '모든 글'은 메뉴 없음
+                const rect = e.currentTarget.getBoundingClientRect();
+                setDropdownInfo({ x: rect.left, y: rect.bottom, item });
+              }}
+              onClick={() => {
+                if (type === "글") {
+                  if (item._builtinAll) {
+                    // '북마크한 모든 글'
+                    navigate("/archive/bookmark/typed");
+                  } else {
+                    // 내 폴더(글)
+                    navigate(`/archive/bookmark/typed/typedList/${item.id}`, {
+                      state: { title: item.title, thumbnailUrl: item.imageUrl },
+                    });
+                  }
+                } else {
+                  // 내 폴더(곡)
+                  navigate(`/archive/bookmark/playedList/${item.id}`, {
+                    state: { title: item.title, thumbnailUrl: item.imageUrl },
+                  });
+                }
+              }}
             />
-          ))} */}
+          ))}
         </S.CardRow>
 
         {showRightBtn && <S.ScrollRightBtn onClick={() => scroll("right")}>{">"}</S.ScrollRightBtn>}
       </S.ScrollWrapper>
 
       {dropdownInfo && (
-        <Dropdown refProp={dropdownRef} x={dropdownInfo.x} y={dropdownInfo.y} onClose={() => setDropdownInfo(null)}>
+        <Dropdown
+          refProp={dropdownRef}
+          x={dropdownInfo.x}
+          y={dropdownInfo.y}
+          onClose={() => setDropdownInfo(null)}
+        >
           <li>이름변경</li>
           <li>폴더삭제</li>
-          <li>공유하기</li>
         </Dropdown>
       )}
     </S.Section>

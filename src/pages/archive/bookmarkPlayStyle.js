@@ -123,7 +123,7 @@ S.PlayInfo = styled.div`
         margin-left: 55px;
     }
     .play{
-        margin-left: 60px;
+        margin-left: 80px;
     }
 `
 S.PlayedCardBox = styled.div`
@@ -151,7 +151,7 @@ S.PlayedCardBox = styled.div`
         }
     }
     .album{
-        border: solid 1px black;
+        /* border: solid 1px black; */
         width: 35px;
         height: 35px;
         margin-left: 27px;
@@ -181,20 +181,19 @@ S.PlayedCardBox = styled.div`
         }
     }
     .like{
-        border: solid 1px black;
-        width: 70px;
-        height: 35px;
-        margin-left: 25px;
+        /* border: solid 1px black; */
+        width: 25px;
+        height: 25px;
+        margin-left: 45px;
     }
     .play{
-        border: solid 1px black;
-        width: 90px;
-        height: 35px;
-        margin-left: 20px;
+        /* border: solid 1px black; */
+        width: 75px;
+        margin-left: 60px;
         img{
-            width: 20px;
-            height: 20px;
-            border: solid 1px red;
+            width: 25px;
+            height: 25px;
+            /* border: solid 1px red; */
         }
     }
 `

@@ -107,6 +107,12 @@ S.MoreBtn = styled.button`
   line-height: 1; //  텍스트 기준 위치 조정
 `;
 
+S.PlayListWrapper = styled.div`
+  display: flex;
+  gap: 200px;
+  padding: 20px 0 0 0;
+`
+
 // 카드 영역
 S.CardColumn = styled.div`
   flex: 1;
@@ -114,6 +120,11 @@ S.CardColumn = styled.div`
   flex-direction: column;
   gap: 16px;
 `;
+
+S.PlayCardColumn = styled.div`
+  /* border: 1px solid red; */
+  width: 750px;
+`
 
 // 편집 모드
 S.FolderEditRow = styled.div`
