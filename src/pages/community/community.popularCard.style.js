@@ -101,6 +101,7 @@ Card.Content = styled.p`
   -webkit-line-clamp: var(--lines);
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-align: justify;
   text-overflow: ellipsis;
   word-break: break-word;
 
