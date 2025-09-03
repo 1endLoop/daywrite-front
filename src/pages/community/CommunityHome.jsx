@@ -4,12 +4,7 @@ import CommunityCard from "./CommunityCard";
 import CommunityPopularCard from "./CommunityPopularCard";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import {
-  fetchCommunityPublic,
-  deletePost,
-  toggleLike,
-  syncLikeInArray,
-} from "../../api/communityApi";
+import { fetchCommunityPublic, deletePost, toggleLike, syncLikeInArray } from "../../api/communityApi";
 import Toast from "../../components/Toast";
 import { notifyLikeChanged } from "../../modules/likeSync";
 
@@ -70,7 +65,16 @@ const CommunityHome = () => {
         setPopLoading(true);
         const res = await fetchCommunityPublic("popular", userId);
         if (!alive) return;
-        const arr = Array.isArray(res?.items) ? res.items.slice(0, 4) : [];
+        // 좋아요 1 이상만, 인기순 정렬(좋아요 ↓, 최신 ↓), 상위 4개
+        const arr = Array.isArray(res?.items)
+          ? res.items
+              .filter((it) => (it.likes ?? 0) > 0)
+              .sort(
+                (a, b) =>
+                  (b.likes ?? 0) - (a.likes ?? 0) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+              )
+              .slice(0, 4)
+          : [];
         setPopularTop(arr);
         setPopError(null);
       } catch (e) {
@@ -95,9 +99,7 @@ const CommunityHome = () => {
     });
     const merged = Array.from(map.values());
     merged.sort(
-      (a, b) =>
-        (b.likes ?? 0) - (a.likes ?? 0) ||
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      (a, b) => (b.likes ?? 0) - (a.likes ?? 0) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
     return merged.slice(0, 4);
   };
@@ -134,11 +136,7 @@ const CommunityHome = () => {
       setItems((prev) => {
         const next = syncLikeInArray(prev, postId, liked, likes);
         if (sort === "popular") {
-          next.sort(
-            (a, b) =>
-              (b.likes ?? 0) - (a.likes ?? 0) ||
-              new Date(b.createdAt) - new Date(a.createdAt)
-          );
+          next.sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0) || new Date(b.createdAt) - new Date(a.createdAt));
         }
         setPopularTop((topPrev) => recomputeTop4(topPrev, next));
         return [...next];
@@ -161,8 +159,7 @@ const CommunityHome = () => {
         artist: item.musicArtist ?? item.artist ?? "",
         nickname: item.nickname ?? "익명",
         author: item.nickname ?? item.author ?? "익명",
-        profileImg:
-          item.profileImg ?? item.profileImageUrl ?? "/assets/images/profiles/profile.jpg",
+        profileImg: item.profileImg ?? item.profileImageUrl ?? "/assets/images/profiles/profile.jpg",
       })),
     [popularTop]
   );
@@ -215,17 +212,11 @@ const CommunityHome = () => {
         <Left>
           <Title>전체 글</Title>
           <SortMenu>
-            <button
-              className={sort === "popular" ? "active" : ""}
-              onClick={() => setSort("popular")}
-            >
+            <button className={sort === "popular" ? "active" : ""} onClick={() => setSort("popular")}>
               인기순
             </button>
             <span className="divider">|</span>
-            <button
-              className={sort === "recent" ? "active" : ""}
-              onClick={() => setSort("recent")}
-            >
+            <button className={sort === "recent" ? "active" : ""} onClick={() => setSort("recent")}>
               최신순
             </button>
           </SortMenu>
@@ -242,8 +233,7 @@ const CommunityHome = () => {
       ) : (
         <CardList>
           {items.map((item) => {
-            const isMine =
-              !!userId && (item.userId === userId || item.userId?._id === userId);
+            const isMine = !!userId && (item.userId === userId || item.userId?._id === userId);
             return (
               <CommunityCard
                 key={item._id || item.id}
@@ -266,9 +256,7 @@ const CommunityHome = () => {
                   try {
                     await deletePost(item._id, userId);
                     await loadList();
-                    setPopularTop((prev) =>
-                      prev.filter((p) => (p._id || p.id) !== (item._id || item.id))
-                    );
+                    setPopularTop((prev) => prev.filter((p) => (p._id || p.id) !== (item._id || item.id)));
                     showToast("삭제되었습니다!", "success");
                   } catch (e) {
                     console.error(e);
