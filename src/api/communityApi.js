@@ -1,5 +1,6 @@
 import axios from "axios";
 
+
 const API = axios.create({
   baseURL: process.env.REACT_APP_API_BASE || "http://localhost:8000/api",
   withCredentials: true,
@@ -27,12 +28,12 @@ export const fetchMyPosts = async (userId, status = "published") => {
   return data; // { items, total }
 };
 
-/** 단건 조회 */
+/** 단건 조회 (백엔드: { item } 로 응답) */
 export const fetchPostById = async (id, userId) => {
   const { data } = await API.get(`/community/posts/${id}`, {
     params: userId ? { userId } : {},
   });
-  return data;
+  return data; // { item }
 };
 
 /** 게시글 수정 */
@@ -60,3 +61,36 @@ export const toggleLike = async (postId, userId) => {
   const { data } = await API.post(`/community/posts/${postId}/like`, { userId });
   return data; // { success, liked, likes, postId }
 };
+
+/** 내가 좋아요한 글 목록 (아카이브 LIKED) */
+export const fetchLikedByUser = async (userId, q = "") => {
+  const { data } = await API.get("/community/posts/liked", {
+    params: { userId, q },
+  });
+  return data; // { items }
+};
+
+/** 배열에서 특정 게시글의 liked/likes 동기화 */
+export const syncLikeInArray = (arr, postId, liked, likes) =>
+  (Array.isArray(arr) ? arr : []).map((it) =>
+    (it._id || it.id) === postId ? { ...it, liked, likes } : it
+  );
+
+/* ========= 전역 좋아요 동기화 이벤트 (아카이브 ↔ 커뮤니티) ========= */
+const LIKE_EVT = "post-like-changed";
+
+/** 어디서든 좋아요 상태가 바뀌면 호출해서 전역 통지 */
+export function notifyLikeChanged(postId, liked, likes) {
+  try {
+    window.dispatchEvent(
+      new CustomEvent(LIKE_EVT, { detail: { postId, liked, likes } })
+    );
+  } catch {}
+}
+
+/** 화면(컴포넌트)에서 구독 → 다른 화면에서 바뀐 좋아요를 즉시 반영 */
+export function subscribeLikeChanged(handler) {
+  const wrap = (e) => handler(e.detail);
+  window.addEventListener(LIKE_EVT, wrap);
+  return () => window.removeEventListener(LIKE_EVT, wrap);
+}
