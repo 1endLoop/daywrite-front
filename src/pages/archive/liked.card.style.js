@@ -8,6 +8,7 @@ Card.Card = styled.div`
   border: 1px solid #e0e0e0;
   border-radius: 5px;
   font-family: pretendard;
+  cursor: pointer;
 `;
 
 Card.Header = styled.div`
@@ -41,7 +42,7 @@ Card.Icon = styled.span`
 Card.LikeIcon = styled.div`
   font-size: 18px;
   cursor: pointer;
-  vertical-align: middle; // 또는 position + top 조정도 가능
+  vertical-align: middle;
 `;
 
 Card.Content = styled.p`
@@ -56,7 +57,6 @@ Card.Content = styled.p`
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: justify;
-  cursor: pointer;
 `;
 
 Card.Divider = styled.div`

@@ -3,9 +3,14 @@ import CommunityCard from "./CommunityCard";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { fetchCommunityPublic, deletePost, toggleLike } from "../../api/communityApi";
+import {
+  fetchCommunityPublic,
+  deletePost,
+  toggleLike,
+  syncLikeInArray,
+} from "../../api/communityApi";
 import Toast from "../../components/Toast";
-import { syncLikeInArray } from "../../modules/likeSync";
+import { notifyLikeChanged } from "../../modules/likeSync";
 
 const CommunityList = () => {
   const navigate = useNavigate();
@@ -17,7 +22,7 @@ const CommunityList = () => {
   const rawUser = auth.user || auth.data || auth.profile || auth.currentUser || null;
   const userId = rawUser?._id || rawUser?.id || rawUser?.userId || null;
 
-  // 토스트 (반복 노출 지원)
+  // 토스트
   const [toast, setToast] = useState(null);
   const [toastId, setToastId] = useState(0);
   const showToast = (message, type = "success") => {
@@ -26,7 +31,7 @@ const CommunityList = () => {
   };
   const hideToast = () => setToast(null);
 
-  // ✅ 분리된 로그인 가드
+  // 가드
   const requireLoginToast = () => {
     if (!userId) {
       showToast("로그인 시 사용할 수 있어요!", "error");
@@ -42,16 +47,6 @@ const CommunityList = () => {
     return true;
   };
 
-  const goWrite = () => {
-    if (!requireLoginAlert()) return; // 글쓰기는 알럿
-    navigate("/community/write");
-  };
-
-  const goMyPosts = () => {
-    if (!requireLoginAlert()) return; // 내가 쓴 글은 알럿
-    navigate("/community/mine");
-  };
-
   const load = async () => {
     try {
       const res = await fetchCommunityPublic(sort, userId);
@@ -64,9 +59,9 @@ const CommunityList = () => {
 
   useEffect(() => {
     load();
-  }, [sort, userId]);
+  }, [sort, userId]); // eslint-disable-line
 
-  // 좋아요는 토스트
+  // 좋아요 토글
   const handleToggleLike = async (postId) => {
     if (!requireLoginToast()) return;
     try {
@@ -75,16 +70,21 @@ const CommunityList = () => {
       setItems((prev) => {
         const next = syncLikeInArray(prev, postId, liked, likes);
         return sort === "popular"
-          ? [...next].sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0) || new Date(b.createdAt) - new Date(a.createdAt))
+          ? [...next].sort(
+              (a, b) =>
+                (b.likes ?? 0) - (a.likes ?? 0) ||
+                new Date(b.createdAt) - new Date(a.createdAt)
+            )
           : next;
       });
+
+      notifyLikeChanged(postId, liked, likes);
     } catch (e) {
       console.error(e);
       showToast("좋아요 처리 실패", "error");
     }
   };
 
-  // 수정/삭제는 토스트 유지
   const handleEdit = (post) => {
     if (!requireLoginToast()) return;
     navigate("/community/write", { state: { mode: "edit", post } });
@@ -110,7 +110,7 @@ const CommunityList = () => {
     <Container>
       {toast && (
         <Toast
-          key={toast.id ?? toastId} // 같은 메시지도 반복 노출
+          key={toast.id ?? toastId}
           type={toast.type}
           message={toast.message}
           onClose={hideToast}
@@ -132,7 +132,14 @@ const CommunityList = () => {
           </SortMenu>
         </Left>
         <RightControls>
-          <WriteButton onClick={goWrite}>나만의 글 쓰기</WriteButton>
+          <WriteButton
+            onClick={() => {
+              if (!requireLoginAlert()) return;
+              navigate("/community/write");
+            }}
+          >
+            나만의 글 쓰기
+          </WriteButton>
         </RightControls>
       </TopRow>
 
@@ -143,7 +150,9 @@ const CommunityList = () => {
             <CommunityCard
               key={item._id || item.id}
               data={item}
-              onClick={() => navigate(`/community/${item._id || item.id}`, { state: { post: item } })}
+              onClick={() =>
+                navigate(`/community/${item._id || item.id}`, { state: { post: item } })
+              }
               showMenu={isMine}
               onEdit={() => handleEdit(item)}
               onDelete={() => handleDelete(item)}

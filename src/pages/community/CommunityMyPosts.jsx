@@ -7,7 +7,7 @@ import { useSelector } from "react-redux";
 import { fetchMyPosts, deletePost } from "../../api/communityApi";
 import Toast from "../../components/Toast";
 import { toggleLike } from "../../api/communityApi";
-import { syncLikeInArray } from "../../modules/likeSync";
+import { syncLikeInArray } from "../../api/communityApi";
 
 const CommunityMyPosts = () => {
   const navigate = useNavigate();

@@ -48,7 +48,9 @@ const PostDetail = () => {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [id, userId, post]);
 
   // 좋아요 토글
@@ -71,9 +73,11 @@ const PostDetail = () => {
 
       // 2) (선택) 홈/목록 등 다른 화면에도 즉시 반영되게 브로드캐스트
       //    듣는 쪽이 없으면 무시되므로 안전합니다.
-      window.dispatchEvent(new CustomEvent("COMMUNITY_LIKE_SYNC", {
-        detail: { postId: post._id, liked, likes }
-      }));
+      window.dispatchEvent(
+        new CustomEvent("COMMUNITY_LIKE_SYNC", {
+          detail: { postId: post._id, liked, likes },
+        })
+      );
     } catch (e) {
       console.error(e);
       showToast("좋아요 처리 실패", "error");
@@ -163,12 +167,12 @@ const PostDetail = () => {
 
         <Post.MusicRow>
           <Post.Music>
-            <span role="img" aria-label="music">🎵</span>
+            <span role="img" aria-label="music">
+              🎵
+            </span>
             <span className="music-name">{view.musicTitle}</span>
             <span className="artist">{view.musicArtist}</span>
           </Post.Music>
-
-          <Post.Write onClick={() => navigate("/community/write")}>이 글 작성하기</Post.Write>
         </Post.MusicRow>
       </Post.Card>
 
@@ -190,8 +194,14 @@ const PostDetail = () => {
               <p>{c.text}</p>
               <Post.CommentBottom>
                 <span>{c.date}</span>
-                <span role="img" aria-label="like">👍</span> {c.likes ?? 0}
-                <span role="img" aria-label="comment">💬</span> {c.comments ?? 0}
+                <span role="img" aria-label="like">
+                  👍
+                </span>{" "}
+                {c.likes ?? 0}
+                <span role="img" aria-label="comment">
+                  💬
+                </span>{" "}
+                {c.comments ?? 0}
               </Post.CommentBottom>
             </Post.CommentContent>
           </Post.Comment>

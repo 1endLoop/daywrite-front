@@ -1,50 +1,171 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
-import LikedCard from "./LikedCard";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import {
+  fetchLikedByUser,
+  toggleLike,
+  subscribeLikeChanged,
+} from "../../api/communityApi";
+import CommunityCard from "../community/CommunityCard";
+import Toast from "../../components/Toast";
 
-const dummyData = [
-  {
-    id: 1,
-    date: "2025. 05. 27",
-    content:
-      "진정한 사랑이란, 반드시 두 사람의 자유가 서로 상대방을 인정하는 기초 위에 세워져야 한다. 이때 두 사람은 서로를 자기 자신처럼 또는 타자처럼 느끼면서, 어느 한편에서도 자기 초월을 포기하지 않고 또 자기를 불구로 만드는 일 없이 함께 세계 속에서 가치와 목적을 발견할 것이다. 또한 자기를 줌으로써 자기 자신을 찾고 세계를 풍요롭게 할 것이다.",
-    title: "제2의 성",
-    author: "시몬느 드 보부아르",
-    music: "Love on Top",
-    artist: "John Canada",
-  },
-  {
-    id: 2,
-    date: "2025. 05. 26",
-    content: "살아남은 자들이 부끄러워하던 시대는 가고, 곧 1등이든 2등이든 무조건 살아남는 것이 최선이라는 시대가 왔다. 지금은 너를 떨어뜨리지 않으면 내가 죽는다는, 오직 단 한명만이 살아남는다는 ‘오징어 게임’, 서바이벌 게임의 세계관이 스크린을 지배하는 세상이 되었다. 그러나 나는 은밀히 믿고 있다. 액정화면 밖 진짜 세상은 다르다고, 거기에는 조용히, 그러나 치열하게, 자기만의 방식으로 살아남아 어떻게든 삶의 의미를 찾기 위해 싸우는 이들이 있다는 것을.",
-    title: "단 한 번의 삶",
-    author: "김영하",
-    music: "Rainy Days",
-    artist: "Lee Moon",
-  },
-];
+const LikedList = ({ showHeader = true, title = "Liked", autoFocus = false }) => {
+  const navigate = useNavigate();
 
-const LikedList = () => {
- return (
-    <Container>
-      <TopRow>
-        <Title>Liked</Title>
-        <SearchBarWrapper>
-          <input type="text" placeholder="검색어를 입력하세요" />
-        </SearchBarWrapper>
-      </TopRow>
-      <CardList>
-        {dummyData.map((item) => (
-          <LikedCard key={item.id} data={item} />
-        ))}
-      </CardList>
+  // 로그인 사용자
+  const auth = useSelector((s) => s.user || s.auth || {});
+  const rawUser =
+    auth.user || auth.data || auth.profile || auth.currentUser || null;
+  const userId = rawUser?._id || rawUser?.id || rawUser?.userId || null;
+
+  // 상태
+  const [keyword, setKeyword] = useState("");
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
+  const [toastId, setToastId] = useState(0);
+  const showToast = (message, type = "success") => {
+    setToastId((v) => v + 1);
+    setToast({ id: Date.now() + Math.random(), message, type });
+  };
+  const hideToast = () => setToast(null);
+
+  // 서버 → 카드 데이터 맵핑
+  const mapPost = (it) => ({
+    ...it,
+    author: it.nickname || "익명", // 작성자=닉네임
+    musicTitle: it.musicTitle || it.music || "",
+    musicArtist: it.musicArtist || it.artist || "",
+    profileImg:
+      it.profileImg ||
+      it.profileImageUrl ||
+      "/assets/images/profiles/profile.jpg",
+    comments: it.comments ?? 0,
+  });
+
+  // 목록 로드
+  const load = async (q = "") => {
+    if (!userId) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      const res = await fetchLikedByUser(userId, q);
+      const mapped = (res.items || []).map(mapPost);
+      setItems(mapped);
+    } catch (e) {
+      console.error(e);
+      setItems([]);
+      showToast("Liked 목록을 불러오지 못했어요.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 초기/사용자 변경 시 로드
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  // 다른 화면에서 좋아요 변경 시 반영
+  useEffect(() => {
+    const unsub = subscribeLikeChanged(({ postId, liked }) => {
+      setItems((prev) => {
+        if (!liked) return prev.filter((p) => (p._id || p.id) !== postId); // 해제 → 제거
+        return prev; // 새로 누른 건 검색/리로드로 반영
+      });
+    });
+    return unsub;
+  }, [keyword, userId]);
+
+  // 검색
+  const onSearch = (e) => {
+    const v = e.target.value;
+    setKeyword(v);
+    load(v);
+  };
+
+  // 좋아요 토글
+  const handleToggleLike = async (postId) => {
+    if (!userId) {
+      window.alert("로그인 시 사용할 수 있어요!");
+      return;
+    }
+    try {
+      const res = await toggleLike(postId, userId);
+      const { liked } = res;
+      if (!liked) {
+        setItems((prev) => prev.filter((p) => (p._id || p.id) !== postId));
+      }
+      showToast(liked ? "좋아요!" : "좋아요 해제", "success");
+    } catch (e) {
+      console.error(e);
+      showToast("좋아요 처리 실패", "error");
+    }
+  };
+
+  const list = useMemo(() => items, [items]);
+
+  return (
+    <Container $compact={!showHeader}>
+      {toast && (
+        <Toast
+          key={toast.id ?? toastId}
+          type={toast.type}
+          message={toast.message}
+          onClose={hideToast}
+          duration={1600}
+        />
+      )}
+
+      {showHeader && (
+        <TopRow>
+          <Title>{title}</Title>
+          <SearchBarWrapper>
+            <input
+              type="text"
+              placeholder="검색어를 입력하세요"
+              value={keyword}
+              onChange={onSearch}
+              autoFocus={autoFocus}
+              aria-label="좋아요 목록 검색"
+            />
+          </SearchBarWrapper>
+        </TopRow>
+      )}
+
+      {loading ? (
+        <InfoText>불러오는 중…</InfoText>
+      ) : list.length === 0 ? (
+        <InfoText>좋아요한 글이 아직 없어요.</InfoText>
+      ) : (
+        <CardList>
+          {list.map((item) => (
+            <CommunityCard
+              key={item._id || item.id}
+              data={item}
+              onClick={() =>
+                navigate(`/community/${item._id || item.id}`, {
+                  state: { post: item, from: "archive-liked" },
+                })
+              }
+              onToggleLike={handleToggleLike}
+              showMenu={false} // LIKED에서는 수정/삭제 메뉴 숨김
+            />
+          ))}
+        </CardList>
+      )}
     </Container>
   );
 };
 
 const Container = styled.div`
   width: 100%;
-  padding-top: 24px;
+  padding-top: ${(p) => (p.$compact ? "0" : "24px")}; /* 헤더 없으면 위 여백 제거 */
 `;
 
 const TopRow = styled.div`
@@ -74,6 +195,12 @@ const CardList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 32px;
+`;
+
+const InfoText = styled.div`
+  color: #888;
+  font-size: 14px;
+  margin: 8px 0 20px;
 `;
 
 export default LikedList;
