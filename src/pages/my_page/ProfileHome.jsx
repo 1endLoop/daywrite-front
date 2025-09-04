@@ -67,14 +67,14 @@ const ProfileHome = () => {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <img src="/assets/images/icons/fire.png" alt="fire" width="24" />
-            <span>연속 {user.streak || 0}일</span>
+            <span>연속 {user.consecutiveLoginDays || 0}일</span>
           </div>
         </S.InfoCard>
 
         <S.InfoCard>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <img src="/assets/images/icons/star.png" alt="star" width="24" />
-            <span>레벨 {user.level || 1}</span>
+            <span>레벨 {user.level|| 1}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <img src="/assets/images/icons/equalizer.png" alt="exp" width="24" />

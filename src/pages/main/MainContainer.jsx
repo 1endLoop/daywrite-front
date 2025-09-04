@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { setUser } from "../../modules/user/user";
 import M from "./main.form.style";
 import MainPopup from "./MainPopup";
 import MainPlaylistPopup from "./MainPlaylistPopup";
@@ -8,6 +9,7 @@ import Toast from "../../components/Toast";
 import { fetchRecommendedMusic } from "../../api/musicApi";
 
 const MainContainer = ({ isUpdate, setIsUpdate }) => {
+  const dispatch = useDispatch();
   const [toast, setToast] = useState(null); // 토스트
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showLike, setShowLike] = useState(false);
@@ -190,8 +192,26 @@ const MainContainer = ({ isUpdate, setIsUpdate }) => {
       });
 
       if (res.ok) {
+        const data = await res.json();
         alert("히스토리 저장 완료!");
         setInputValue("");
+        
+        // Redux store 업데이트 - 서버에서 계산된 최신 값으로 업데이트
+        if (data.reward && rawUser) {
+          const updatedUser = {
+            ...rawUser,
+            exp: data.reward.newTotalExp,  // 서버에서 계산된 총 경험치
+            level: data.reward.newLevel    // 서버에서 계산된 새 레벨
+          };
+          dispatch(setUser(updatedUser));
+          
+          // 레벨업 시 추가 알림
+          if (data.reward.levelUp) {
+            setToast(`🎉 ${data.reward.expMessage}`);
+          } else {
+            setToast(`💰 +${data.reward.totalExp}XP 획득!`);
+          }
+        }
       } else {
         const err = await res.json();
         alert("저장 실패: " + (err.message || "서버 오류"));

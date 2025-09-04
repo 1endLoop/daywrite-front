@@ -112,7 +112,7 @@ const CollectionDetail = () => {
             </div>
             <div id='imgEditBox'>
               <div id='imgEdit' onClick={() => setOpenDropdown((prev) => !prev)}>
-                <img src="" alt="" />
+                <img src="/assets/images/icons/svg/more.svg" alt="" />
               </div>
               <p
                 onClick={() => {
