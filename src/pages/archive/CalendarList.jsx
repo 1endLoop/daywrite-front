@@ -6,7 +6,7 @@ import './calendarcustom.css';
 import styled from 'styled-components';
 import CalendarPopup from './CalendarPopup';
 
-const CalendarList = ({userId, setWritingCount,setConsecutiveDays}) => {
+const CalendarList = ({userId}) => {
   const [calendarData, setCalendarData] = useState({});
   const [showPopup, setShowPopup] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -42,38 +42,8 @@ const CalendarList = ({userId, setWritingCount,setConsecutiveDays}) => {
         
         const histories = await historyRes.json();
 
-        const consecutiveDays = (histories) => {
-          const dates = [...new Set(histories.map(h =>
-            new Date(h.createdAt).toLocaleDateString('en-CA')
-          ))].sort();
-
-          let consecutive = 0;
-          let current = 0;
-
-          for (let i = dates.length - 1; i >= 0; i--) {
-            const today = new Date().toLocaleDateString('en-CA');
-            const currentDate = dates[i];
-
-            if (i === dates.length - 1 && currentDate === today) {
-              current = 1;
-            } else if (i < dates.length - 1) {
-              const prevDate = dates[i + 1];
-              const diff = (new Date(prevDate) - new Date(currentDate)) / (1000 *
-              60 * 60 * 24);
-
-              if (diff === 1) {
-                current++;
-              } else {
-                break;
-              }
-            }
-          }
-
-          return current;
-        };
         
-        setWritingCount?.(histories.length); //부모에게 필사개수 전달
-        setConsecutiveDays?.(consecutiveDays(histories))//부모에게 연속 일자 전달 
+        
 
         const data = {};
         histories.forEach(({createdAt,content ,book, author, mood, music, artist}) => {
