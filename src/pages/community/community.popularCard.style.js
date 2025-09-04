@@ -1,10 +1,10 @@
 import styled from "styled-components";
 
-const Card = {}
+const Card = {};
 
 Card.Card = styled.div`
-  width:218px;
-  min-width:218px;
+  width: 218px;
+  min-width: 218px;
   background-color: #fff;
   padding: 24px 22px 24px 22px;
   border: 1px solid #e0e0e0;
@@ -59,7 +59,6 @@ Card.Divider = styled.div`
   margin: 16px 0;
 `;
 
-
 Card.Title = styled.div`
   font-size: 15px;
   font-weight: 600;
@@ -88,26 +87,33 @@ Card.CommentIcon = styled.img`
   width: 20px;
 `;
 
-
+/* ✅ 내용 6줄 고정 높이 → Divider 위치 통일 */
 Card.Content = styled.p`
+  --lh: 1.7;
+  --lines: 6;
+
   font-size: 15px;
   color: #282828;
-  line-height: 1.7;
+  line-height: var(--lh);
   margin-bottom: 20px;
 
   display: -webkit-box;
-  -webkit-line-clamp: 7;
+  -webkit-line-clamp: var(--lines);
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-align: justify;
   text-overflow: ellipsis;
   word-break: break-word;
+
+  min-height: calc(var(--lh) * var(--lines) * 1em);
+  max-height: calc(var(--lh) * var(--lines) * 1em);
 `;
 
 Card.Divider = styled.div`
   border: none;
   border-top: 1px solid #e0e0e0;
   margin: 0 0 20px 0;
-`
+`;
 
 Card.MetaWrapper = styled.div`
   display: flex;
@@ -172,6 +178,5 @@ Card.MusicLeft = styled.div`
 Card.MusicRight = styled.div`
   font-size: 16px;
 `;
-
 
 export default Card;
