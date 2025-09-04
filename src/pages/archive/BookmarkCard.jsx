@@ -1,11 +1,10 @@
-// BookmarkCard.jsx
 import S from "./bookmark.section.style";
 
 const BookmarkCard = ({
   title,
   count,
   type, // "글" | "곡"
-  onMoreClick,
+  onMoreClick,        // ← 존재하면 메뉴 표시, 없으면 숨김
   onClick,
 
   // 어떤 프롭 이름으로 오더라도 커버
@@ -15,17 +14,15 @@ const BookmarkCard = ({
   cover,
   thumb,
 }) => {
-  // 백엔드 베이스 (http://localhost:8000 또는 실제 도메인)
   const getAssetOrigin = () => {
     const raw = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
     return raw.replace(/\/api$/i, "") || "http://localhost:8000";
   };
 
-  // 카드 내부에서만 경로 보정
   const buildLocalSrc = (t = "") => {
     if (!t) return "";
     const s = String(t).replace(/\\/g, "/");
-    if (/^https?:\/\//i.test(s)) return s;   // 절대 URL
+    if (/^https?:\/\//i.test(s)) return s;
     const origin = getAssetOrigin();
     if (s.startsWith("/")) return `${origin}${s}`;
     if (s.startsWith("uploads/")) return `${origin}/${s}`;
@@ -34,24 +31,27 @@ const BookmarkCard = ({
 
   const raw = imageUrl || thumbnailUrl || imgUrl || cover || thumb || "";
   const src = buildLocalSrc(raw);
-  const fallback =
-    type === "곡" ? "/assets/images/album-image.png" : "/assets/images/book-img.jpeg";
+  const fallback = type === "곡" ? "/assets/images/album-image.png" : "/assets/images/book-img.jpeg";
+
+  const showMenu = typeof onMoreClick === "function";  // ★ 핵심
 
   return (
     <S.Card onClick={onClick}>
       <S.Image
         src={src || fallback}
         alt={title}
-        onError={(e) => {
-          e.currentTarget.src = fallback;
-        }}
+        onError={(e) => { e.currentTarget.src = fallback; }}
       />
       <S.InfoRow>
         <S.CardTitle>{title}</S.CardTitle>
-        <S.MenuWrapper onClick={(e) => e.stopPropagation()}>
-          <S.MoreBtn onClick={onMoreClick}>⋯</S.MoreBtn>
-        </S.MenuWrapper>
+
+        {showMenu && (  /* ★ onMoreClick 있을 때만 ⋯ 표시 */
+          <S.MenuWrapper onClick={(e) => e.stopPropagation()}>
+            <S.MoreBtn onClick={onMoreClick}>⋯</S.MoreBtn>
+          </S.MenuWrapper>
+        )}
       </S.InfoRow>
+
       <S.CardDesc>{`${count}개의 ${type}`}</S.CardDesc>
     </S.Card>
   );

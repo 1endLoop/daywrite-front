@@ -129,7 +129,7 @@ S.PlayInfo = styled.div`
 S.PlayedCardBox = styled.div`
     /* border: solid 1px red; */
     width: 700px;
-    height: 45px;
+    height: 50px;
     display: flex;
     align-items: center;
     margin-top: 5px;

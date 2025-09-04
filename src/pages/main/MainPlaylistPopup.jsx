@@ -10,57 +10,86 @@ const MainPlaylistPopup = ({ onClose, data }) => {
 
   // ✅ uid 통일
   const uid = localStorage.getItem('uid') || localStorage.getItem('userId');
+  const [pending, setPending] = useState(false); // 토글 시 스냅샷 롤백 + 중복 클릭 방지
+
+  // 1) 팝업이 열릴 때 서버에서 liked 상태를 받아서 세팅
+useEffect(() => {
+  let ignore = false;
+  const items = (data ?? []);
+
+  const init = async () => {
+    try {
+      const urlBase = process.env.REACT_APP_BACKEND_URL;
+      const res = await fetch(`${urlBase}/api/playList/check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: uid,
+          songs: items.map(({ title, artist }) => ({ title, artist }))
+        })
+      });
+      const { statuses } = await res.json();
+      const likedSet = new Set(
+        (statuses || []).filter(s => s.liked).map(s => `${s.title}|${s.artist}`)
+      );
+      if (!ignore) {
+        setPlaylist(items.map(it => ({
+          ...it,
+          liked: likedSet.has(`${it.title}|${it.artist}`)
+        })));
+      }
+    } catch (e) {
+      console.error(e);
+      if (!ignore) setPlaylist(items.map(it => ({ ...it, liked: false })));
+    }
+  };
+
+  init();
+  return () => { ignore = true; };
+}, [data, uid]);
 
   // ✅ data 프롭 바뀌면 state 동기화 (liked 기본값 false)
   useEffect(() => {
     setPlaylist((data ?? []).map(it => ({ liked: false, ...it })));
   }, [data]);
 
-  const toggleLike = async (index) => {
-    if (!playlist[index]) return;
-    const prev = playlist;
-    const target = playlist[index];
-    const newLiked = !target.liked;
+const toggleLike = async (index) => {
+  if (!playlist[index] || pending) return;
+  setPending(true);
 
-    // 낙관적 업데이트
-    setPlaylist(prev =>
-      prev.map((it, i) => (i === index ? { ...it, liked: newLiked } : it))
-    );
+  const snapshot = playlist.map(x => ({ ...x })); // 깊은 스냅샷
+  const target = snapshot[index];
+  const newLiked = !target.liked;
+  const { title, artist, img } = target;
 
-    const { title, artist } = target;
+  // 낙관적 업데이트
+  setPlaylist(p => p.map((it, i) => i === index ? { ...it, liked: newLiked } : it));
 
-    try {
-      const urlBase = process.env.REACT_APP_BACKEND_URL;
-
-      if (newLiked) {
-        // ✅ 좋아요 저장 (userId 포함, 배열 형태)
-        const res = await fetch(`${urlBase}/api/playList/liked`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: uid,
-            songs: [{ title, artist }],
-          }),
-        });
-        if (!res.ok) throw new Error(await res.text());
-        console.log('좋아요 저장됨:', title);
-      } else {
-        // ✅ 좋아요 취소 (userId 포함)
-        const res = await fetch(`${urlBase}/api/playList/unlike`, {
-          method: 'POST', // (백엔드가 POST로 받도록 구현되어 있음)
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, artist, userId: uid }),
-        });
-        if (!res.ok) throw new Error(await res.text());
-        console.log('좋아요 취소됨:', title);
-      }
-    } catch (err) {
-      console.error('좋아요 처리 오류:', err);
-      // 실패 시 롤백
-      setPlaylist(prev);
-      alert('좋아요 처리에 실패했어요.');
+  try {
+    const urlBase = process.env.REACT_APP_BACKEND_URL;
+    if (newLiked) {
+      const res = await fetch(`${urlBase}/api/playList/liked`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: uid, songs: [{ title, artist, img }] })
+      });
+      if (!res.ok) throw new Error(await res.text());
+    } else {
+      const res = await fetch(`${urlBase}/api/playList/unlike`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, artist, userId: uid })
+      });
+      if (!res.ok) throw new Error(await res.text());
     }
-  };
+  } catch (err) {
+    console.error('좋아요 처리 오류:', err);
+    setPlaylist(snapshot); // 정확히 롤백
+    alert('좋아요 처리에 실패했어요.');
+  } finally {
+    setPending(false);
+  }
+};
 
   // ===== 드래그 이동 =====
   const handleMouseDown = (e) => {

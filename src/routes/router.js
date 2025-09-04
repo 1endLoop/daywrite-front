@@ -83,7 +83,11 @@ const router = createBrowserRouter([
       // Archive
       {
         path: "archive",
-        element: <ArchiveContainer />,
+        element: (
+          <ProtectedRoute>
+            <ArchiveContainer />
+          </ProtectedRoute>
+        ),
         children: [
           {
             index: true,

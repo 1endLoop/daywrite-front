@@ -95,7 +95,6 @@ S.ScrollRightBtn = styled.button`
 S.Card = styled.div`
   width: 160px;
   flex-shrink: 0;
-
 `;
 
 S.Image = styled.img`
@@ -119,6 +118,8 @@ S.CardTitle = styled.div`
 S.CardDesc = styled.div`
   font-size: 12px;
   color: gray;
+  position: absolute;
+  bottom: -17px;
 `;
 
 S.MenuWrapper = styled.div`
@@ -129,6 +130,9 @@ S.MoreBtn = styled.button`
   background: none;
   border: none;
   cursor: pointer;
+  position: absolute;
+  right: 1px;
+  bottom: -2px;
 `;
 
 // 전체보기

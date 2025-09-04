@@ -12,6 +12,9 @@ const BookmarkSection = ({ title, type }) => {
   const { ref: scrollRef, scroll } = useScrollX();
   const [showLeftBtn, setShowLeftBtn] = useState(false);
   const [showRightBtn, setShowRightBtn] = useState(true);
+  const BE = process.env.REACT_APP_BACKEND_URL;
+  const basePath = type === "글" ? "bookmarkFolder" : "playList";
+  const [busy, setBusy] = useState(false);
 
   // 서버 폴더 목록
   const [serverFolders, setServerFolders] = useState([]);
@@ -28,10 +31,11 @@ const BookmarkSection = ({ title, type }) => {
   // 드롭다운
   const [dropdownInfo, setDropdownInfo] = useState(null);
   const dropdownRef = useRef(null);
+  const apiBase = `${BE}/api/${basePath}`;
+
   useClickOutside(dropdownRef, () => setDropdownInfo(null));
 
   // 정적 파일 origin → 업로드 URL 만들 때 사용
-  const BE = process.env.REACT_APP_BACKEND_URL;
   const getAssetOrigin = () => {
     const raw = (BE || "").replace(/\/+$/, "");
     return raw.replace(/\/api$/i, "") || "http://localhost:8000";
@@ -69,20 +73,20 @@ const BookmarkSection = ({ title, type }) => {
     if (!isAuthed || !userId) return;
     (async () => {
       try {
-        const basePath   = type === "글" ? "bookmarkFolder" : "playList";
         const filterType = type; // "글" 또는 "곡"
         const res = await fetch(
-          `${BE}/api/${basePath}/folders?userId=${encodeURIComponent(userId)}&type=${encodeURIComponent(filterType)}`,
+          `${apiBase}/folders?userId=${encodeURIComponent(userId)}&type=${encodeURIComponent(filterType)}`,
           { headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) } }
         );
         const data = res.ok ? await res.json() : [];
-        // 서버 스키마: [{ id, title, type, thumbnailUrl, count }]
         const mapped = (Array.isArray(data) ? data : []).map(f => ({
           id: String(f.id),
           title: f.title,
           type: f.type,
           count: f.count ?? 0,
-          imageUrl: buildImageSrc(f.thumbnailUrl) || (type === "글" ? "/assets/images/book-img.jpeg" : "/assets/images/album-image.png"),
+          imageUrl:
+            buildImageSrc(f.thumbnailUrl) ||
+            (type === "글" ? "/assets/images/book-img.jpeg" : "/assets/images/album-image.png"),
         }));
         setServerFolders(mapped);
       } catch (e) {
@@ -90,8 +94,8 @@ const BookmarkSection = ({ title, type }) => {
         setServerFolders([]);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthed, userId, type, token]);
+  }, [isAuthed, userId, type, token, apiBase]);
+
 
   // 렌더 카드: (글) '모든 글' + 서버 폴더 / (곡) 서버 폴더만
   const cards = useMemo(() => {
@@ -130,6 +134,71 @@ const BookmarkSection = ({ title, type }) => {
     handleScrollVisibility();
     return () => el.removeEventListener("scroll", handleScrollVisibility);
   }, []);
+
+    // --- 이름변경 ---
+  const handleRename = async (item) => {
+    if (!item?.id) return;
+    const next = window.prompt("새 폴더 이름을 입력하세요.", item.title || "");
+    if (next == null) return; // 취소
+    const newTitle = String(next).trim();
+    if (!newTitle) return alert("폴더 이름은 비어있을 수 없어요.");
+
+    try {
+      setBusy(true);
+      const res = await fetch(`${apiBase}/folders/${encodeURIComponent(item.id)}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ title: newTitle, userId }), // 백엔드가 userId 허용
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "이름 변경 실패");
+
+      // 성공: 로컬 상태 갱신
+      setServerFolders((prev) =>
+        prev.map((f) => (String(f.id) === String(item.id) ? { ...f, title: newTitle } : f))
+      );
+      setDropdownInfo(null);
+    } catch (e) {
+      console.error(e);
+      alert(e.message || "이름 변경 중 오류가 발생했어요.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+    // --- 폴더 삭제 ---
+  const handleDelete = async (item) => {
+    if (!item?.id) return;
+    if (!window.confirm(`정말 "${item.title}" 폴더를 삭제할까요?`)) return;
+
+    try {
+      setBusy(true);
+      // DELETE의 body는 일부 환경에서 막히니 쿼리로 userId 전달
+      const url = `${apiBase}/folders/${encodeURIComponent(item.id)}?userId=${encodeURIComponent(
+        userId || ""
+      )}`;
+      const res = await fetch(url, {
+        method: "DELETE",
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      const data = await res.json();
+      if (!res.ok || data?.ok !== true) {
+        throw new Error(data?.message || "폴더 삭제 실패");
+      }
+
+      // 성공: 로컬 상태에서 제거
+      setServerFolders((prev) => prev.filter((f) => String(f.id) !== String(item.id)));
+      setDropdownInfo(null);
+    } catch (e) {
+      console.error(e);
+      alert(e.message || "폴더 삭제 중 오류가 발생했어요.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <S.Section>
@@ -193,8 +262,8 @@ const BookmarkSection = ({ title, type }) => {
           y={dropdownInfo.y}
           onClose={() => setDropdownInfo(null)}
         >
-          <li>이름변경</li>
-          <li>폴더삭제</li>
+          <li onClick={() => !busy && handleRename(dropdownInfo.item)}>이름변경</li>
+          <li onClick={() => !busy && handleDelete(dropdownInfo.item)}>폴더삭제</li>
         </Dropdown>
       )}
     </S.Section>
